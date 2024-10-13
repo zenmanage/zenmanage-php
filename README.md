@@ -21,7 +21,7 @@ Configuration values can be set when creating a new API client or via environmen
 **Configuration via environment variables**
 
 ```bash
-FLAGGER_ENVIRONMENT_TOKEN=tok_sample
+ZENMANAGE_ENVIRONMENT_TOKEN=tok_sample
 ```
 
 **Configuration during initialization**

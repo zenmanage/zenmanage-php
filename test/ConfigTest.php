@@ -7,8 +7,8 @@ final class ConfigTest extends TestCase
 {
     public function tearDown(): void
     {
-        putenv("FLAGGER_API_ENDPOINT=");
-        putenv("FLAGGER_ENVIRONMENT_TOKEN=");
+        putenv("ZENMANAGE_API_ENDPOINT=");
+        putenv("ZENMANAGE_ENVIRONMENT_TOKEN=");
     }
 
     public function testConfigFromArray()
@@ -38,7 +38,7 @@ final class ConfigTest extends TestCase
 
     public function testAPIEndpointFromEnvironment()
     {
-        putenv("FLAGGER_API_ENDPOINT=http://example.com");
+        putenv("ZENMANAGE_API_ENDPOINT=http://example.com");
 
         $config = new \Zenmanage\Config();
         $this->assertEquals('http://example.com', $config->get('api_endpoint'));
@@ -58,7 +58,7 @@ final class ConfigTest extends TestCase
 
     public function testEnvironmentTokenFromEnvironment()
     {
-        putenv("FLAGGER_ENVIRONMENT_TOKEN=_environment");
+        putenv("ZENMANAGE_ENVIRONMENT_TOKEN=_environment");
 
         $config = new \Zenmanage\Config();
         $this->assertEquals('tok_environment', $config->get('environment_token'));

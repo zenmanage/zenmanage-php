@@ -55,7 +55,7 @@ class Config
         $keys = array_keys($this->defaultConfig());
 
         foreach ($keys as $key) {
-            $value = getenv("FLAGGER_" . strtoupper($key), true);
+            $value = getenv("ZENMANAGE_" . strtoupper($key), true);
 
             if ($value) {
                 $config[$key] = $value;

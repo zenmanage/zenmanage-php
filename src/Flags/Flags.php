@@ -31,7 +31,7 @@ class Flags {
 
         $headers = [
             'X-DEFAULT-VALUE' => $defaults,
-            'X-FLAGGER-CONTEXT' => $contexts,
+            'X-ZENMANAGE-CONTEXT' => $contexts,
         ];
 
         try {
@@ -78,7 +78,7 @@ class Flags {
 
         $headers = [
             'X-DEFAULT-VALUE' => $default != null ? $default->toJson() : null,
-            'X-FLAGGER-CONTEXT' => $contexts,
+            'X-ZENMANAGE-CONTEXT' => $contexts,
         ];
 
         $endpoint = "/flags/$key";
