@@ -58,7 +58,7 @@ final class ConfigTest extends TestCase
 
     public function testEnvironmentTokenFromEnvironment()
     {
-        putenv("ZENMANAGE_ENVIRONMENT_TOKEN=_environment");
+        putenv("ZENMANAGE_ENVIRONMENT_TOKEN=tok_environment");
 
         $config = new \Zenmanage\Config();
         $this->assertEquals('tok_environment', $config->get('environment_token'));
