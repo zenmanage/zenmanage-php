@@ -2,6 +2,7 @@
 
 namespace Zenmanage\Shared;
 
+use \GuzzleHttp\Client;
 use \GuzzleHttp\Exception\ClientException;
 use \Zenmanage\Exceptions\FlagNotFoundException;
 use \Zenmanage\Exceptions\InvalidTokenException;
@@ -19,7 +20,7 @@ class HttpClient
             'base_uri' => $config->get('api_endpoint')
         ]);
 
-        $this->client = new \GuzzleHttp\Client($options);
+        $this->client = new Client($options);
     }
 
     public function get($endpoint, array $headers = null)
@@ -50,6 +51,7 @@ class HttpClient
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json; charset=UTF-8',
                 'X-API-KEY' => $this->config->get('environment_token'),
+                'User-Agent' => 'zenmanage-php/1.0.0',
                 ...$headers != null ? $headers : [],
             ]
         ];

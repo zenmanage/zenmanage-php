@@ -8,30 +8,29 @@ use \Zenmanage\Exceptions\FlagNotFoundException;
 use \Zenmanage\Flags\Request\Entities\DefaultValue;
 use \Zenmanage\Flags\Request\Entities\Context\Context;
 use \Zenmanage\Flags\Response\Entities\Flag;
+use \Zenmanage\Shared\HttpClient;
 
 class Flags {
-    private $client;
+
+    private HttpClient $client;
+    private ?Context $context;
+    private ?array $defaults = [];
 
     public function __construct($client) {
         $this->client = $client;
     }
 
-    public function all(Context $context = null, array $defaultValues = null) : array {
+    public function all() : array {
         $endpoint = '/flags';
 
-        $defaults = null;
-        if ($defaultValues != null) {
-            $defaults = json_encode(array_map(fn($value): array => $value->toArray(), $defaultValues));
-        }
-
-        $contexts = null;
-        if ($context != null) {
-            $contexts = json_encode($context);
+        $defaultValues = null;
+        if ($this->defaults != null) {
+            $defaultValues = json_encode(array_map(fn($value): array => $value->toArray(), $this->defaults));
         }
 
         $headers = [
-            'X-DEFAULT-VALUE' => $defaults,
-            'X-ZENMANAGE-CONTEXT' => $contexts,
+            'X-DEFAULT-VALUE' => $defaultValues,
+            'X-ZENMANAGE-CONTEXT' => $this->context != null ? json_encode($this->context) : null,
         ];
 
         try {
@@ -42,8 +41,8 @@ class Flags {
         } catch (Exception $e) {
             error_log($e->getMessage());
             
-            if ($defaultValues != null) {
-                return array_map(fn($value): Flag => $value->toFlag(), $defaultValues);
+            if ($this->defaults != null) {
+                return array_map(fn($value): Flag => $value->toFlag(), $this->defaults);
             }
             
             throw new NoResponseException();
@@ -64,21 +63,24 @@ class Flags {
 
     }
 
-    public function single(string $key, Context $context = null, ?string $type = null, string|bool|int|float $defaultValue = null) : Flag {
+    public function single(string $key, ?string $type = null, string|bool|int|float $value = null) : Flag {
         
-        $default = null;
-        if ($defaultValue != null) {
-            $default = new DefaultValue($key, $type, $defaultValue);
+        $defaultValue = null;
+
+        if ($this->defaults != null) {
+            $default = array_filter($this->defaults, fn($value): bool => $value->key == $key);
+            if (count($default) == 1) {
+                $defaultValue = json_encode($default[0]->toArray());
+            }
         }
 
-        $contexts = null;
-        if ($context != null) {
-            $contexts = json_encode($context);
+        if ($value != null) {
+            $default = new DefaultValue($key, $type, $value);
         }
 
         $headers = [
             'X-DEFAULT-VALUE' => $default != null ? $default->toJson() : null,
-            'X-ZENMANAGE-CONTEXT' => $contexts,
+            'X-ZENMANAGE-CONTEXT' => $this->context != null ? json_encode($this->context) : null,
         ];
 
         $endpoint = "/flags/$key";
@@ -94,5 +96,17 @@ class Flags {
 
             throw new NoResponseException();
         }
+    }
+
+    public function withContext(Context $context): Flags
+    {
+        $this->context = $context;
+        return $this;
+    }
+
+    public function withDefault(string $key, string $type, string|bool|float|int $defaultValue): Flags
+    {
+        array_push($this->defaults, new DefaultValue($key, $type, $defaultValue));
+        return $this;
     }
 }

@@ -27,44 +27,51 @@ ZENMANAGE_ENVIRONMENT_TOKEN=tok_sample
 **Configuration during initialization**
 
 ```php
-use \Zenmanage\Client;
+use \Zenmanage\Zenmanage;
 
-$client = new Client::config(['environment_token' => 'tok_sample'])->connect();
+$zenmanage = new Zenmanage(['environment_token' => 'tok_sample']);
 ```
 
 ## Context
 
-When retrieving values for feature flags a context can be provided that can change the value based on unique attributes of the context.
+When retrieving values for feature flags, a context can be provided that can change the value based on unique attributes of the context.
 
 ```php
-use \Zenmanage\Client;
+use \Zenmanage\Zenmanage;
 use \Zenmanage\Flags\Request\Entities\Context\Attribute;
 use \Zenmanage\Flags\Request\Entities\Context\Context;
 use \Zenmanage\Flags\Request\Entities\Context\Value;
 
-$context = new Context('user', 'John Doe', 'john-doe', [
-    new Attribute('key', [
-        new Value('value'),
+$context = new Context('user', 'John Doe', 'id-123', [
+    new Attribute('company', [
+        new Value('JD, Inc.'),
     ]),
 ]);
 
-$client = Client::config()
-    ->withContext($context)
-    ->connect();
+$zenmanage = new Zenmanage()->flags
+    ->withContext($context);
+```
 
-$results = $client->all();
-$result = $client->get('flag-key')->getValue();
+## Default Values
+
+When retrieving values for feature flags, a default value will be returned to the application if the Zenmanage API is unavailable or responds incorrectly. This will ensure your app will still function in the event that a flag cannot be evaluated.
+
+```php
+use \Zenmanage\Zenmanage;
+
+$zenmanage = new Zenmanage()->flags
+    ->withDefault('flag-key', 'boolean', false);
 
 ```
 
-## Usage
+## Retrieving a Feature Flag Value
 
-Before retrieving a feature flag, create a new client. If you configured your environment token key via environment variables there's nothing to add. Otherwise, see the example above.
+Before retrieving a feature flag, create a new instance of Zenmanage. If you configured your environment token key via environment variables there's nothing to add. Otherwise, see the example above.
 
 ```php
-use \Zenmanage\Client;
+use \Zenmanage\Zenmanage;
 
-$client = new Client();
+$zenmanage = new Zenmanage();
 ```
 
 ### Retrieving Flags
@@ -72,7 +79,7 @@ $client = new Client();
 #### All Flags
 
 ```php
-$results = $client->all();
+$results = $zenmanage->flags->all();
 
 foreach ($results as $results) {
     $key = $result->key;
@@ -85,12 +92,20 @@ foreach ($results as $results) {
 #### Single Flag
 
 ```php
-$result = $client->flag('flag-key');
+$result = $zenmanage->flags->single('flag-key');
 
 $key = $result->key;
 $name = $result->name;
 $type = $result->type;
 $value = $result->value
+```
+
+## Reporting Feature Flag Usage
+
+When your application uses a feature flag, it can notify Zenmanage of the usage. This helps Zenmanage determine which flags are active and which may have been abandoned.
+
+```php
+$zenmanage->flags->report('flag-key');
 ```
 
 ## Contributing
