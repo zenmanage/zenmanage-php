@@ -70,16 +70,16 @@ class Flags {
         if ($this->defaults != null) {
             $default = array_filter($this->defaults, fn($value): bool => $value->key == $key);
             if (count($default) == 1) {
-                $defaultValue = json_encode($default[0]->toArray());
+                $defaultValue = reset($default);
             }
         }
 
         if ($value != null) {
-            $default = new DefaultValue($key, $type, $value);
+            $defaultValue = new DefaultValue($key, $type, $value);
         }
 
         $headers = [
-            'X-DEFAULT-VALUE' => $default != null ? $default->toJson() : null,
+            'X-DEFAULT-VALUE' => $defaultValue != null ? $defaultValue->toJson() : null,
             'X-ZENMANAGE-CONTEXT' => $this->context != null ? json_encode($this->context) : null,
         ];
 
@@ -91,7 +91,7 @@ class Flags {
             throw $e;
         } catch (Exception) {
             if ($defaultValue != null) {
-                return $default->toFlag();
+                return $defaultValue->toFlag();
             }
 
             throw new NoResponseException();
