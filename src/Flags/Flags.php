@@ -13,7 +13,7 @@ use \Zenmanage\Shared\HttpClient;
 class Flags {
 
     private HttpClient $client;
-    private ?Context $context;
+    private ?Context $context = null;
     private ?array $defaults = [];
 
     public function __construct($client) {
@@ -89,7 +89,7 @@ class Flags {
             return Flag::map($this->client->get($endpoint, $headers));
         } catch (InvalidTokenException|FlagNotFoundException $e) {
             throw $e;
-        } catch (Exception) {
+        } catch (Exception $e) {
             if ($defaultValue != null) {
                 return $defaultValue->toFlag();
             }
