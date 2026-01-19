@@ -1,0 +1,47 @@
+{
+    "version": "2026-01-15",
+    "flags": [
+        {
+            "version": "fla_test_001",
+            "type": "boolean",
+            "key": "test-feature",
+            "name": "Test Feature",
+            "target": {
+                "version": "tar_test_001",
+                "expired_at": null,
+                "published_at": "2026-01-15T00:00:00+00:00",
+                "scheduled_at": null,
+                "value": {
+                    "version": "val_test_001",
+                    "value": {
+                        "boolean": true
+                    }
+                }
+            },
+            "rules": [
+                {
+                    "version": "rul_test_001",
+                    "description": "Disable for specific users",
+                    "criteria": {
+                        "selector": "segment",
+                        "selector_subtype": null,
+                        "comparer": "equal",
+                        "values": [
+                            {
+                                "identifier": "blocked-user@example.com",
+                                "type": "user"
+                            }
+                        ]
+                    },
+                    "position": 1,
+                    "value": {
+                        "version": "val_test_002",
+                        "value": {
+                            "boolean": false
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

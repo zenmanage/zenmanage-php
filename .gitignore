@@ -1,4 +1,10 @@
-composer.lock
 /vendor/
-/.php_cs.cache
-/.phpunit.result.cache
+/coverage/
+/.phpunit.cache/
+/.php-cs-fixer.cache
+composer.lock
+.DS_Store
+.idea/
+.vscode/
+*.log
+/cache/

@@ -1,0 +1,39 @@
+name: PHP SDK CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test & Quality (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          coverage: none
+          tools: composer
+          ini-values: memory_limit=-1
+          cache: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Run tests
+        run: composer test
+
+      - name: Static analysis
+        run: composer analyze
+
+      - name: Code style check
+        run: composer format:check

@@ -1,0 +1,8 @@
+parameters:
+    level: 9
+    paths:
+        - src
+        - tests
+    ignoreErrors:
+        - '#Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::(andReturn|with|andReturnNull)\(\)#'
+        - '#Parameter \$\w+ of class .+ constructor expects .+, Mockery\\MockInterface given#'

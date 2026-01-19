@@ -1,0 +1,281 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Zenmanage\Flags;
+
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Zenmanage\Api\ApiClientInterface;
+use Zenmanage\Cache\CacheInterface;
+use Zenmanage\Exception\EvaluationException;
+use Zenmanage\Flags\Context\Context;
+use Zenmanage\Rules\RuleEngineInterface;
+
+/**
+ * Main flag manager that orchestrates fetching, caching, and evaluating flags.
+ */
+final class FlagManager implements FlagManagerInterface
+{
+    private const CACHE_KEY = 'zenmanage_rules';
+
+    /** @var Flag[]|null */
+    private ?array $flags = null;
+
+    private Context $context;
+
+    private DefaultsCollection $defaults;
+
+    public function __construct(
+        private readonly ApiClientInterface $apiClient,
+        private readonly CacheInterface $cache,
+        private readonly RuleEngineInterface $ruleEngine,
+        private readonly int $cacheTtl,
+        private readonly LoggerInterface $logger = new NullLogger(),
+    ) {
+        $this->context = new Context('anonymous');
+        $this->defaults = new DefaultsCollection();
+    }
+
+    public function all(): array
+    {
+        $this->ensureRulesLoaded();
+
+        $flags = $this->flags ?? [];
+        
+        // If we have a context, evaluate each flag
+        if ($this->context) {
+            return array_map(fn($flag) => $this->evaluateFlag($flag), $flags);
+        }
+
+        return $flags;
+    }
+
+    public function single(string $key, mixed $default = null): Flag
+    {
+        $this->ensureRulesLoaded();
+
+        foreach ($this->flags ?? [] as $flag) {
+            if ($flag->getKey() === $key) {
+                // Report usage for this flag
+                $this->reportUsage($key);
+                
+                // If we have a context, evaluate the flag
+                if ($this->context) {
+                    return $this->evaluateFlag($flag);
+                }
+
+                return $flag;
+            }
+        }
+
+        // Priority 1: Use inline default parameter if provided
+        if ($default !== null) {
+            $flagFromDefault = $this->createFlagFromDefault($key, $default);
+            // Report usage even for default values
+            $this->reportUsage($key);
+            return $flagFromDefault;
+        }
+
+        // Priority 2: Check DefaultsCollection
+        if ($this->defaults->has($key)) {
+            $flagFromDefault = $this->createFlagFromDefault($key, $this->defaults->get($key));
+            // Report usage even for default values
+            $this->reportUsage($key);
+            return $flagFromDefault;
+        }
+
+        throw new EvaluationException("Flag not found: {$key}");
+    }
+
+    public function withContext(Context $context): self
+    {
+        $clone = clone $this;
+        $clone->context = $context;
+
+        return $clone;
+    }
+
+    public function withDefaults(DefaultsCollection $defaults): self
+    {
+        $clone = clone $this;
+        $clone->defaults = $defaults;
+
+        return $clone;
+    }
+
+    public function reportUsage(string $key): void
+    {
+        $this->apiClient->reportUsage($key);
+    }
+
+    public function refreshRules(): void
+    {
+        $this->logger->info('Refreshing rules from API');
+
+        $this->loadRulesFromApi();
+    }
+
+    /**
+     * Ensure rules are loaded (from cache or API).
+     */
+    private function ensureRulesLoaded(): void
+    {
+        if ($this->flags !== null) {
+            return;
+        }
+
+        // Try to load from cache first
+        $cached = $this->cache->get(self::CACHE_KEY);
+
+        if ($cached !== null) {
+            $this->logger->debug('Loading rules from cache');
+
+            try {
+                $data = json_decode($cached, true);
+
+                if (is_array($data)) {
+                    $this->flags = $this->parseFlags($data);
+
+                    return;
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to parse cached rules', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // Load from API
+        $this->loadRulesFromApi();
+    }
+
+    /**
+     * Load rules from the API and cache them.
+     */
+    private function loadRulesFromApi(): void
+    {
+        $this->logger->info('Fetching rules from API');
+
+        // Pass context if available (not anonymous)
+        $contextToSend = ($this->context->getType() !== 'anonymous' && $this->context->getIdentifier() !== null) 
+            ? $this->context 
+            : null;
+
+        $response = $this->apiClient->getRules($contextToSend);
+        $this->flags = $response->getFlags();
+
+        // Cache the rules
+        $data = [
+            'version' => $response->getVersion(),
+            'flags' => array_map(fn ($f) => $f->jsonSerialize(), $this->flags),
+        ];
+
+        $this->cache->set(self::CACHE_KEY, json_encode($data) ?: '', $this->cacheTtl);
+
+        $this->logger->info('Rules cached successfully', [
+            'flag_count' => count($this->flags),
+            'ttl' => $this->cacheTtl,
+        ]);
+    }
+
+    /**
+     * Parse flags from cached data.
+     *
+     * @param array<string, mixed> $data
+     *
+     * @return Flag[]
+     */
+    private function parseFlags(array $data): array
+    {
+        $flags = [];
+
+        if (isset($data['flags']) && is_array($data['flags'])) {
+            foreach ($data['flags'] as $flagData) {
+                try {
+                    $flags[] = Flag::fromArray($flagData);
+                } catch (\Exception $e) {
+                    $this->logger->warning('Failed to parse flag', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        return $flags;
+    }
+
+    /**
+     * Create a flag from a default value.
+     */
+    private function createFlagFromDefault(string $key, mixed $value): Flag
+    {
+        // Determine type from value
+        $type = match (true) {
+            is_bool($value) => 'boolean',
+            is_int($value) || is_float($value) => 'number',
+            is_string($value) => 'string',
+            default => 'string',
+        };
+
+        // Wrap value in appropriate format
+        $wrappedValue = match ($type) {
+            'boolean' => ['boolean' => $value],
+            'number' => ['number' => $value],
+            default => ['string' => $value],
+        };
+
+        $ruleValue = new \Zenmanage\Rules\RuleValue(
+            version: 'default',
+            value: $wrappedValue,
+        );
+
+        $target = new Target(
+            version: 'default',
+            expiredAt: null,
+            publishedAt: null,
+            scheduledAt: null,
+            value: $ruleValue,
+        );
+
+        return new Flag(
+            version: 'default',
+            type: $type,
+            key: $key,
+            name: $key,
+            target: $target,
+            rules: [],
+        );
+    }
+
+    /**
+     * Evaluate a flag with the current context.
+     */
+    private function evaluateFlag(Flag $flag): Flag
+    {
+        $evaluatedValue = $this->ruleEngine->evaluate($flag, $this->context);
+
+        // Create a new flag with the evaluated value
+        // Since Flag is immutable, we need to reconstruct it
+        // For simplicity, we'll create a new target with the evaluated value
+        $newTarget = new Target(
+            version: $flag->getTarget()->getVersion(),
+            expiredAt: $flag->getTarget()->getExpiredAt(),
+            publishedAt: $flag->getTarget()->getPublishedAt(),
+            scheduledAt: $flag->getTarget()->getScheduledAt(),
+            value: new \Zenmanage\Rules\RuleValue(
+                version: $flag->getTarget()->getValue()->getVersion(),
+                value: $evaluatedValue,
+            ),
+        );
+
+        return new Flag(
+            version: $flag->getVersion(),
+            type: $flag->getType(),
+            key: $flag->getKey(),
+            name: $flag->getName(),
+            target: $newTarget,
+            rules: $flag->getRules(),
+        );
+    }
+}
