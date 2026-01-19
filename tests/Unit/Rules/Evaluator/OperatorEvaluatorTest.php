@@ -91,6 +91,69 @@ final class OperatorEvaluatorTest extends TestCase
         $this->assertFalse($this->evaluator->evaluate('notin', 'b', ['a', 'b', 'c']));
     }
 
+    public function testContainsOperatorHandlesNonStringOrArray(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('contains', 123, '1'));
+    }
+
+    public function testStartsWithOperatorRejectsNonStrings(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('startswith', ['hello'], 'he'));
+    }
+
+    public function testEndsWithOperatorRejectsNonStrings(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('endswith', 10, '0'));
+    }
+
+    public function testRegexOperatorInvalidPatternAndNonStrings(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('regex', ['array'], '/test/'));
+    }
+
+    public function testNumericOperatorsReturnFalseForNonNumeric(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('gt', 'abc', 5));
+        $this->assertFalse($this->evaluator->evaluate('lt', 5, 'abc'));
+        $this->assertFalse($this->evaluator->evaluate('gte', 'abc', 'def'));
+        $this->assertFalse($this->evaluator->evaluate('lte', [], 1));
+    }
+
+    public function testInOperatorRejectsNonArrayExpected(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('in', 'a', 'not-an-array'));
+    }
+
+    public function testNegatedContainsUsesNormalizedOperator(): void
+    {
+        $this->assertFalse($this->evaluator->evaluate('not_contains', 'hello', 'he'));
+    }
+
+    public function testRegexOperatorSupportsAndEvaluates(): void
+    {
+        $op = new \Zenmanage\Rules\Evaluator\Operators\RegexOperator();
+
+        $this->assertTrue($op->supports('regex'));
+        $this->assertFalse($op->supports('other'));
+        $this->assertTrue($op->evaluate('abc123', '/abc\d+/'));
+        $this->assertFalse($op->evaluate('abc', '/^\d+$/'));
+    }
+
+    public function testRegexOperatorCatchesInvalidPattern(): void
+    {
+        $op = new \Zenmanage\Rules\Evaluator\Operators\RegexOperator();
+
+        set_error_handler(function ($severity, $message, $file, $line): void {
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        });
+
+        try {
+            $this->assertFalse($op->evaluate('value', '/[invalid/'));
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     public function testRegexOperator(): void
     {
         $this->assertTrue($this->evaluator->evaluate('regex', 'test123', '/^test\d+$/'));
