@@ -7,8 +7,6 @@ namespace Zenmanage\Tests\Unit\Flags;
 use PHPUnit\Framework\TestCase;
 use Zenmanage\Flags\Flag;
 use Zenmanage\Flags\Target;
-use Zenmanage\Rules\Condition;
-use Zenmanage\Rules\ConditionValue;
 use Zenmanage\Rules\Rule;
 use Zenmanage\Rules\RuleValue;
 

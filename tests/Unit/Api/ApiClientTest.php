@@ -41,7 +41,7 @@ final class ApiClientTest extends TestCase
 
     private function guzzleException(string $message): GuzzleException
     {
-        return new class($message) extends \Exception implements GuzzleException {
+        return new class ($message) extends \Exception implements GuzzleException {
             public function __construct(string $message)
             {
                 parent::__construct($message);
