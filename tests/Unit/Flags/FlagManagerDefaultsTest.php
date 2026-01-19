@@ -33,7 +33,7 @@ final class FlagManagerDefaultsTest extends TestCase
             new RulesResponse(version: '1.0.0', flags: [])
         );
         $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('non-existent-flag')->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('non-existent-flag', Mockery::any())->andReturnNull();
 
         $manager = new FlagManager(
             apiClient: $apiClient,
@@ -63,7 +63,7 @@ final class FlagManagerDefaultsTest extends TestCase
             new RulesResponse(version: '1.0.0', flags: [])
         );
         $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('test-flag')->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -96,7 +96,7 @@ final class FlagManagerDefaultsTest extends TestCase
             new RulesResponse(version: '1.0.0', flags: [])
         );
         $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('test-flag')->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -129,9 +129,9 @@ final class FlagManagerDefaultsTest extends TestCase
             new RulesResponse(version: '1.0.0', flags: [])
         );
         $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('bool-flag')->andReturnNull();
-        $apiClient->shouldReceive('reportUsage')->with('num-flag')->andReturnNull();
-        $apiClient->shouldReceive('reportUsage')->with('str-flag')->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('bool-flag', Mockery::any())->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('num-flag', Mockery::any())->andReturnNull();
+        $apiClient->shouldReceive('reportUsage')->with('str-flag', Mockery::any())->andReturnNull();
 
         $manager = new FlagManager(
             apiClient: $apiClient,

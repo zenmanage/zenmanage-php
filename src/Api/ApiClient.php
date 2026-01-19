@@ -43,7 +43,7 @@ final class ApiClient implements ApiClientInterface
         ]);
     }
 
-    public function getRules(\Zenmanage\Flags\Context\Context $context = null): RulesResponse
+    public function getRules(): RulesResponse
     {
         $attempt = 0;
         /** @var GuzzleException|null $lastException */
@@ -56,16 +56,8 @@ final class ApiClient implements ApiClientInterface
                     'attempt' => $attempt + 1,
                 ]);
 
-                // Build headers with optional context
-                $headers = [];
-                if ($context !== null) {
-                    $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
-                }
-
                 // Step 1: Get the CDN path from flag-json endpoint
-                $response = $this->httpClient->get(self::RULES_PATH, [
-                    'headers' => $headers,
-                ]);
+                $response = $this->httpClient->get(self::RULES_PATH);
                 $body = (string) $response->getBody();
 
                 $metadata = json_decode($body, true);
@@ -139,7 +131,7 @@ final class ApiClient implements ApiClientInterface
         );
     }
 
-    public function reportUsage(string $flagKey): void
+    public function reportUsage(string $flagKey, ?\Zenmanage\Flags\Context\Context $context = null): void
     {
         $attempt = 0;
 
@@ -150,7 +142,15 @@ final class ApiClient implements ApiClientInterface
                     'attempt' => $attempt + 1,
                 ]);
 
-                $this->httpClient->post("/v1/flags/{$flagKey}/usage");
+                // Build headers with optional context
+                $headers = [];
+                if ($context !== null) {
+                    $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
+                }
+
+                $this->httpClient->post("/v1/flags/{$flagKey}/usage", [
+                    'headers' => $headers,
+                ]);
 
                 $this->logger->info('Successfully reported flag usage', ['key' => $flagKey]);
 

@@ -23,7 +23,6 @@ use Zenmanage\Rules\RuleEngine;
 final class Zenmanage
 {
     private readonly FlagManagerInterface $flagManager;
-    private ?\Zenmanage\Flags\Context\Context $context = null;
 
     public function __construct(
         Config $config,
@@ -55,30 +54,11 @@ final class Zenmanage
     }
 
     /**
-     * Set the context for flag evaluation.
-     * This should be called before flags() to ensure context is sent to the API.
-     *
-     * @param \Zenmanage\Flags\Context\Context $context
-     * @return self
-     */
-    public function withContext(\Zenmanage\Flags\Context\Context $context): self
-    {
-        $clone = clone $this;
-        $clone->context = $context;
-
-        return $clone;
-    }
-
-    /**
-     * Get the flag manager instance for evaluation.
-     * Use withContext() before this method to send context to the API.
+     * Get the flag manager instance for flag evaluation.
+     * Use withContext() on the returned FlagManager to send context to the API.
      */
     public function flags(): FlagManagerInterface
     {
-        if ($this->context !== null) {
-            return $this->flagManager->withContext($this->context);
-        }
-
         return $this->flagManager;
     }
 

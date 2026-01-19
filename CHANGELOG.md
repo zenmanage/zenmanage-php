@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multiple cache backend support (in-memory, filesystem, null)
 - Fluent configuration builder with environment variable support
 - Context-based flag evaluation with first-class `identifier`, `name`, and `type` properties
-- **`withContext()` method on main Zenmanage class** - Call before `flags()` to ensure context is sent to API when loading rules
 - Three rule selector types for advanced targeting:
   - **Segment selector** - Match specific context identifiers
   - **Context selector** - Same as segment (alternative name)
@@ -36,9 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced per-flag API calls with single rules fetch
 - Improved performance with local evaluation
 - Enhanced type safety with strict typing
-- **Recommended pattern: `$zenmanage->withContext($context)->flags()`** instead of `$zenmanage->flags()->withContext($context)`
-  - The old pattern still works (backwards compatible), but the new pattern ensures context is available when rules are loaded from the API
-  - All examples updated to demonstrate the recommended pattern
 - Context now requires `type` parameter and supports optional `identifier` and `name` as first-class properties
 - Context structure now matches API format:
   - Property renamed: `id` → `identifier`

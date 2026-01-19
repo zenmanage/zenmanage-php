@@ -14,13 +14,14 @@ interface ApiClientInterface
 {
     /**
      * Fetch all rules from the Zenmanage API.
-     *
-     * @param Context|null $context Optional context to send for tracking
      */
-    public function getRules(?Context $context = null): RulesResponse;
+    public function getRules(): RulesResponse;
 
     /**
      * Report usage of a flag (optional analytics).
+     *
+     * @param string $flagKey The flag key
+     * @param Context|null $context Optional context to send for tracking
      */
-    public function reportUsage(string $flagKey): void;
+    public function reportUsage(string $flagKey, ?Context $context = null): void;
 }

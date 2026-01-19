@@ -53,7 +53,7 @@ final class FlagManager implements FlagManagerInterface
         foreach ($this->flags ?? [] as $flag) {
             if ($flag->getKey() === $key) {
                 // Report usage for this flag
-                $this->reportUsage($key);
+                $this->reportUsage($key, $this->context);
 
                 return $this->evaluateFlag($flag);
             }
@@ -63,7 +63,7 @@ final class FlagManager implements FlagManagerInterface
         if ($default !== null) {
             $flagFromDefault = $this->createFlagFromDefault($key, $default);
             // Report usage even for default values
-            $this->reportUsage($key);
+            $this->reportUsage($key, $this->context);
 
             return $flagFromDefault;
         }
@@ -72,7 +72,7 @@ final class FlagManager implements FlagManagerInterface
         if ($this->defaults->has($key)) {
             $flagFromDefault = $this->createFlagFromDefault($key, $this->defaults->get($key));
             // Report usage even for default values
-            $this->reportUsage($key);
+            $this->reportUsage($key, $this->context);
 
             return $flagFromDefault;
         }
@@ -96,9 +96,9 @@ final class FlagManager implements FlagManagerInterface
         return $clone;
     }
 
-    public function reportUsage(string $key): void
+    public function reportUsage(string $key, ?Context $context = null): void
     {
-        $this->apiClient->reportUsage($key);
+        $this->apiClient->reportUsage($key, $context);
     }
 
     public function refreshRules(): void
@@ -149,12 +149,7 @@ final class FlagManager implements FlagManagerInterface
     {
         $this->logger->info('Fetching rules from API');
 
-        // Pass context if available (not anonymous)
-        $contextToSend = ($this->context->getType() !== 'anonymous' && $this->context->getIdentifier() !== null)
-            ? $this->context
-            : null;
-
-        $response = $this->apiClient->getRules($contextToSend);
+        $response = $this->apiClient->getRules();
         $this->flags = $response->getFlags();
 
         // Cache the rules

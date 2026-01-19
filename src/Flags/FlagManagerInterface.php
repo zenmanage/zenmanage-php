@@ -37,8 +37,11 @@ interface FlagManagerInterface
 
     /**
      * Report usage of a flag.
+     *
+     * @param string $key The flag key
+     * @param Context|null $context Optional context to send for tracking
      */
-    public function reportUsage(string $key): void;
+    public function reportUsage(string $key, ?Context $context = null): void;
 
     /**
      * Refresh rules from the API.

@@ -58,8 +58,8 @@ That's it! 🎉
 // Check if user has access to beta features
 $context = Context::single('user', $user->id, $user->name);
 
-$betaAccess = $zenmanage->withContext($context)
-    ->flags()
+$betaAccess = $zenmanage->flags()
+    ->withContext($context)
     ->single('beta-program')
     ->isEnabled();
 
@@ -69,7 +69,7 @@ if ($betaAccess) {
 }
 ```
 
-**Note:** Always call `withContext()` before `flags()` to ensure context is sent to the API when loading rules.
+**Note:** Call `withContext()` on the flag manager to ensure context is sent to the API when loading rules.
 
 ### A/B Testing
 
@@ -83,8 +83,8 @@ $context = Context::fromArray([
     ],
 ]);
 
-$variant = $zenmanage->withContext($context)
-    ->flags()
+$variant = $zenmanage->flags()
+    ->withContext($context)
     ->single('checkout-flow')
     ->asString();
 
@@ -107,8 +107,8 @@ $context = Context::fromArray([
     ],
 ]);
 
-$advancedReports = $zenmanage->withContext($context)
-    ->flags()
+$advancedReports = $zenmanage->flags()
+    ->withContext($context)
     ->single('advanced-reports')
     ->isEnabled();
 
