@@ -16,11 +16,11 @@ use Zenmanage\Rules\RuleEngineInterface;
 
 final class FlagManagerDefaultsTest extends TestCase
 {
-    private ApiClientInterface $apiClient;
+    private \Mockery\MockInterface $apiClient;
 
-    private CacheInterface $cache;
+    private \Mockery\MockInterface $cache;
 
-    private RuleEngineInterface $ruleEngine;
+    private \Mockery\MockInterface $ruleEngine;
 
     protected function setUp(): void
     {
