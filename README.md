@@ -147,6 +147,9 @@ if ($zenmanage->flags()->single('new-payment-processor', false)->isEnabled()) {
 
 ### Laravel Integration
 
+> [!TIP]
+> There is an official Laravel integration on GitHub: [zenmanage/zenmanage-laravel](https://github.com/zenmanage/zenmanage-laravel). Use it to plug Zenmanage directly into your Laravel app with minimal setup.
+
 Create a service provider to make Zenmanage available throughout your app:
 
 ```php
@@ -700,6 +703,6 @@ MIT
 
 ## Support
 
-- Documentation: https://docs.zenmanage.com
+- Documentation: https://github.com/zenmanage/zenmanage-php
 - Issues: https://github.com/zenmanage/zenmanage-php/issues
-- Email: support@zenmanage.com
+- Email: hello@zenmanage.com
