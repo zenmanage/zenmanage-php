@@ -16,32 +16,47 @@ use Zenmanage\Rules\RuleEngineInterface;
 
 final class FlagManagerDefaultsTest extends TestCase
 {
+    private ApiClientInterface $apiClient;
+
+    private CacheInterface $cache;
+
+    private RuleEngineInterface $ruleEngine;
+
+    protected function setUp(): void
+    {
+        $this->apiClient = Mockery::mock(ApiClientInterface::class);
+        $this->cache = Mockery::mock(CacheInterface::class);
+        $this->ruleEngine = Mockery::mock(RuleEngineInterface::class);
+
+        // Mock cache miss and empty API response
+        $this->cache->shouldReceive('get')->andReturn(null);
+        $this->apiClient->shouldReceive('getRules')->andReturn(
+            new RulesResponse(version: '1.0.0', flags: [])
+        );
+        $this->cache->shouldReceive('set')->andReturn(true);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
     }
 
-    public function testSingleWithInlineDefault(): void
+    private function createFlagManager(): FlagManager
     {
-        $apiClient = Mockery::mock(ApiClientInterface::class);
-        $cache = Mockery::mock(CacheInterface::class);
-        $ruleEngine = Mockery::mock(RuleEngineInterface::class);
-
-        // Mock cache miss and empty API response
-        $cache->shouldReceive('get')->andReturn(null);
-        $apiClient->shouldReceive('getRules')->andReturn(
-            new RulesResponse(version: '1.0.0', flags: [])
-        );
-        $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('non-existent-flag', Mockery::any())->andReturnNull();
-
-        $manager = new FlagManager(
-            apiClient: $apiClient,
-            cache: $cache,
-            ruleEngine: $ruleEngine,
+        return new FlagManager(
+            apiClient: $this->apiClient,
+            cache: $this->cache,
+            ruleEngine: $this->ruleEngine,
             cacheTtl: 3600,
             logger: new NullLogger()
         );
+    }
+
+    public function testSingleWithInlineDefault(): void
+    {
+        $this->apiClient->shouldReceive('reportUsage')->with('non-existent-flag', Mockery::any())->andReturnNull();
+
+        $manager = $this->createFlagManager();
 
         // Test inline default
         $flag = $manager->single('non-existent-flag', 'inline-default-value');
@@ -53,29 +68,13 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleInlineDefaultTakesPriorityOverCollection(): void
     {
-        $apiClient = Mockery::mock(ApiClientInterface::class);
-        $cache = Mockery::mock(CacheInterface::class);
-        $ruleEngine = Mockery::mock(RuleEngineInterface::class);
-
-        // Mock cache miss and empty API response
-        $cache->shouldReceive('get')->andReturn(null);
-        $apiClient->shouldReceive('getRules')->andReturn(
-            new RulesResponse(version: '1.0.0', flags: [])
-        );
-        $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
         ]);
 
-        $manager = new FlagManager(
-            apiClient: $apiClient,
-            cache: $cache,
-            ruleEngine: $ruleEngine,
-            cacheTtl: 3600,
-            logger: new NullLogger()
-        );
+        $manager = $this->createFlagManager();
 
         // Inline default should take priority
         $flag = $manager->withDefaults($defaults)
@@ -86,29 +85,13 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleFallsBackToCollectionWhenNoInlineDefault(): void
     {
-        $apiClient = Mockery::mock(ApiClientInterface::class);
-        $cache = Mockery::mock(CacheInterface::class);
-        $ruleEngine = Mockery::mock(RuleEngineInterface::class);
-
-        // Mock cache miss and empty API response
-        $cache->shouldReceive('get')->andReturn(null);
-        $apiClient->shouldReceive('getRules')->andReturn(
-            new RulesResponse(version: '1.0.0', flags: [])
-        );
-        $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
         ]);
 
-        $manager = new FlagManager(
-            apiClient: $apiClient,
-            cache: $cache,
-            ruleEngine: $ruleEngine,
-            cacheTtl: 3600,
-            logger: new NullLogger()
-        );
+        $manager = $this->createFlagManager();
 
         // Should use collection default when no inline default
         $flag = $manager->withDefaults($defaults)
@@ -119,27 +102,11 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithDifferentTypes(): void
     {
-        $apiClient = Mockery::mock(ApiClientInterface::class);
-        $cache = Mockery::mock(CacheInterface::class);
-        $ruleEngine = Mockery::mock(RuleEngineInterface::class);
+        $this->apiClient->shouldReceive('reportUsage')->with('bool-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('num-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('str-flag', Mockery::any())->andReturnNull();
 
-        // Mock cache miss and empty API response
-        $cache->shouldReceive('get')->andReturn(null);
-        $apiClient->shouldReceive('getRules')->andReturn(
-            new RulesResponse(version: '1.0.0', flags: [])
-        );
-        $cache->shouldReceive('set')->andReturn(true);
-        $apiClient->shouldReceive('reportUsage')->with('bool-flag', Mockery::any())->andReturnNull();
-        $apiClient->shouldReceive('reportUsage')->with('num-flag', Mockery::any())->andReturnNull();
-        $apiClient->shouldReceive('reportUsage')->with('str-flag', Mockery::any())->andReturnNull();
-
-        $manager = new FlagManager(
-            apiClient: $apiClient,
-            cache: $cache,
-            ruleEngine: $ruleEngine,
-            cacheTtl: 3600,
-            logger: new NullLogger()
-        );
+        $manager = $this->createFlagManager();
 
         // Boolean default
         $boolFlag = $manager->single('bool-flag', true);

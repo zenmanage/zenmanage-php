@@ -45,90 +45,20 @@ final class ApiClient implements ApiClientInterface
 
     public function getRules(): RulesResponse
     {
-        $attempt = 0;
-        /** @var GuzzleException|null $lastException */
         $lastException = null;
 
-        while ($attempt < self::MAX_RETRIES) {
+        for ($attempt = 0; $attempt < self::MAX_RETRIES; $attempt++) {
             try {
-                $this->logger->debug('Fetching rules metadata from API', [
-                    'endpoint' => $this->apiEndpoint . self::RULES_PATH,
-                    'attempt' => $attempt + 1,
-                ]);
-
-                // Step 1: Get the CDN path from flag-json endpoint
-                $response = $this->httpClient->get(self::RULES_PATH);
-                $body = (string) $response->getBody();
-
-                $metadata = json_decode($body, true);
-
-                if (!is_array($metadata)) {
-                    throw new InvalidRulesException('API response is not valid JSON');
-                }
-
-                if (!isset($metadata['data']['cdn'], $metadata['data']['path'])) {
-                    throw new InvalidRulesException('API response missing cdn or path fields');
-                }
-
-                $cdn = $metadata['data']['cdn'];
-                $path = $metadata['data']['path'];
-
-                if (!is_string($cdn) || !is_string($path)) {
-                    throw new InvalidRulesException('cdn or path fields are not strings');
-                }
-
-                $rulesUrl = $cdn . $path;
-
-                $this->logger->debug('Fetching rules from CDN', [
-                    'url' => $rulesUrl,
-                ]);
-
-                // Step 2: Fetch the actual rules from the CDN
-                $rulesResponse = $this->httpClient->get($rulesUrl);
-                $rulesBody = (string) $rulesResponse->getBody();
-
-                $this->logger->info('Successfully fetched rules from CDN', [
-                    'size' => strlen($rulesBody),
-                ]);
-
-                $data = json_decode($rulesBody, true);
-
-                if (!is_array($data)) {
-                    throw new InvalidRulesException('Rules JSON is not valid');
-                }
-
-                return RulesResponse::fromArray($data);
-            } catch (GuzzleException $e) {
-                $lastException = $e;
-                $attempt++;
-
-                if ($attempt < self::MAX_RETRIES) {
-                    $delay = self::RETRY_DELAY_MS * (2 ** ($attempt - 1)); // Exponential backoff
-                    $this->logger->warning('Failed to fetch rules, retrying', [
-                        'attempt' => $attempt,
-                        'delay_ms' => $delay,
-                        'error' => $e->getMessage(),
-                    ]);
-
-                    usleep($delay * 1000);
-                }
+                return $this->fetchRulesWithRetry($attempt);
             } catch (InvalidRulesException $e) {
                 throw $e;
+            } catch (GuzzleException $e) {
+                $lastException = $e;
+                $this->handleRetryDelay($attempt, $e);
             }
         }
 
-        assert($lastException instanceof GuzzleException);
-
-        $this->logger->error('Failed to fetch rules after all retries', [
-            'attempts' => self::MAX_RETRIES,
-            'error' => $lastException->getMessage(),
-        ]);
-
-        throw new FetchRulesException(
-            'Failed to fetch rules from API after ' . self::MAX_RETRIES . ' attempts',
-            0,
-            $lastException,
-        );
+        return $this->throwFetchRulesException($lastException);
     }
 
     public function reportUsage(string $flagKey, ?\Zenmanage\Flags\Context\Context $context = null): void
@@ -178,5 +108,98 @@ final class ApiClient implements ApiClientInterface
                 }
             }
         }
+    }
+
+    /**
+     * Fetch rules from API and CDN with logging.
+     */
+    private function fetchRulesWithRetry(int $attempt): RulesResponse
+    {
+        $this->logger->debug('Fetching rules metadata from API', [
+            'endpoint' => $this->apiEndpoint . self::RULES_PATH,
+            'attempt' => $attempt + 1,
+        ]);
+
+        $rulesUrl = $this->getCdnRulesUrl();
+
+        $this->logger->debug('Fetching rules from CDN', [
+            'url' => $rulesUrl,
+        ]);
+
+        $rulesBody = (string) $this->httpClient->get($rulesUrl)->getBody();
+
+        $this->logger->info('Successfully fetched rules from CDN', [
+            'size' => strlen($rulesBody),
+        ]);
+
+        $data = json_decode($rulesBody, true);
+
+        if (!is_array($data)) {
+            throw new InvalidRulesException('Rules JSON is not valid');
+        }
+
+        return RulesResponse::fromArray($data);
+    }
+
+    /**
+     * Get the CDN URL for rules from the API metadata endpoint.
+     */
+    private function getCdnRulesUrl(): string
+    {
+        $response = $this->httpClient->get(self::RULES_PATH);
+        $body = (string) $response->getBody();
+
+        $metadata = json_decode($body, true);
+
+        if (!is_array($metadata)) {
+            throw new InvalidRulesException('API response is not valid JSON');
+        }
+
+        if (!isset($metadata['data']['cdn'], $metadata['data']['path'])) {
+            throw new InvalidRulesException('API response missing cdn or path fields');
+        }
+
+        $cdn = $metadata['data']['cdn'];
+        $path = $metadata['data']['path'];
+
+        if (!is_string($cdn) || !is_string($path)) {
+            throw new InvalidRulesException('cdn or path fields are not strings');
+        }
+
+        return $cdn . $path;
+    }
+
+    /**
+     * Handle retry delay with exponential backoff.
+     */
+    private function handleRetryDelay(int $attempt, GuzzleException $e): void
+    {
+        if ($attempt + 1 < self::MAX_RETRIES) {
+            $delay = self::RETRY_DELAY_MS * (2 ** $attempt); // Exponential backoff
+            $this->logger->warning('Failed to fetch rules, retrying', [
+                'attempt' => $attempt + 1,
+                'delay_ms' => $delay,
+                'error' => $e->getMessage(),
+            ]);
+
+            usleep($delay * 1000);
+        }
+    }
+
+    /**
+     * @throws FetchRulesException
+     */
+    private function throwFetchRulesException(?GuzzleException $lastException): never
+    {
+        $this->logger->error('Failed to fetch rules after all retries', [
+            'attempts' => self::MAX_RETRIES,
+            'error' => $lastException?->getMessage(),
+        ]);
+
+        throw new FetchRulesException(
+            'Failed to fetch rules from API after ' . self::MAX_RETRIES . ' attempts',
+            0,
+            $lastException,
+        );
     }
 }
