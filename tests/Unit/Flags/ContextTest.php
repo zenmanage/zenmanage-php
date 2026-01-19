@@ -49,6 +49,9 @@ final class ContextTest extends TestCase
 
         $serialized = $context->jsonSerialize();
         $this->assertArrayHasKey('attributes', $serialized);
+        $this->assertIsArray($serialized['attributes']);
+        $this->assertArrayHasKey(0, $serialized['attributes']);
+        $this->assertIsArray($serialized['attributes'][0]);
         $this->assertSame('country', $serialized['attributes'][0]['key']);
     }
 

@@ -34,9 +34,9 @@ final class ApiClientTest extends TestCase
 
     private function rulesFixture(): string
     {
-        $contents = file_get_contents(__DIR__ . '/../../Fixtures/rules.json') ?: '';
+        $contents = file_get_contents(__DIR__ . '/../../Fixtures/rules.json');
 
-        return $contents;
+        return is_string($contents) ? $contents : '';
     }
 
     private function guzzleException(string $message): GuzzleException
@@ -58,12 +58,17 @@ final class ApiClientTest extends TestCase
                 'cdn' => 'https://cdn.example.com',
                 'path' => '/rules.json',
             ],
-        ]));
+        ]) ?: '');
 
         $rules = new Response(200, [], $this->rulesFixture());
 
-        $httpClient->shouldReceive('get')->once()->with('/v1/flag-json')->andReturn($metadata);
-        $httpClient->shouldReceive('get')->once()->with('https://cdn.example.com/rules.json')->andReturn($rules);
+        /** @var \Mockery\Expectation $getMetadata */
+        $getMetadata = $httpClient->shouldReceive('get');
+        $getMetadata->once()->with('/v1/flag-json')->andReturn($metadata);
+
+        /** @var \Mockery\Expectation $getRules */
+        $getRules = $httpClient->shouldReceive('get');
+        $getRules->once()->with('https://cdn.example.com/rules.json')->andReturn($rules);
 
         $client = $this->makeClient($httpClient);
         $response = $client->getRules();
@@ -75,7 +80,9 @@ final class ApiClientTest extends TestCase
     public function testGetRulesThrowsWhenMetadataInvalid(): void
     {
         $httpClient = Mockery::mock(Client::class);
-        $httpClient->shouldReceive('get')->once()->with('/v1/flag-json')->andReturn(new Response(200, [], 'not-json'));
+        /** @var \Mockery\Expectation $get */
+        $get = $httpClient->shouldReceive('get');
+        $get->once()->with('/v1/flag-json')->andReturn(new Response(200, [], 'not-json'));
 
         $client = $this->makeClient($httpClient);
 
@@ -88,7 +95,9 @@ final class ApiClientTest extends TestCase
         $httpClient = Mockery::mock(Client::class);
         $exception = $this->guzzleException('network down');
 
-        $httpClient->shouldReceive('get')->times(3)->with('/v1/flag-json')->andThrow($exception);
+        /** @var \Mockery\Expectation $get */
+        $get = $httpClient->shouldReceive('get');
+        $get->times(3)->with('/v1/flag-json')->andThrow($exception);
 
         $client = $this->makeClient($httpClient);
 
@@ -99,13 +108,17 @@ final class ApiClientTest extends TestCase
     public function testReportUsageSendsContextHeader(): void
     {
         $httpClient = Mockery::mock(Client::class);
-        $httpClient->shouldReceive('post')->once()->with(
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
                 $encoded = $args['headers']['X-ZENMANAGE-CONTEXT'] ?? '';
                 $decoded = json_decode((string) $encoded, true);
 
-                return isset($decoded['identifier']) && $decoded['identifier'] === 'abc-123';
+                return is_array($decoded)
+                    && isset($decoded['identifier'])
+                    && $decoded['identifier'] === 'abc-123';
             })
         )->andReturn(new Response(200));
 
@@ -120,7 +133,9 @@ final class ApiClientTest extends TestCase
         $httpClient = Mockery::mock(Client::class);
         $exception = $this->guzzleException('network down');
 
-        $httpClient->shouldReceive('post')->times(3)->andThrow($exception);
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->times(3)->andThrow($exception);
 
         $client = $this->makeClient($httpClient);
 

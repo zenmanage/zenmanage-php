@@ -10,12 +10,22 @@ use Zenmanage\Exception\InvalidRulesException;
 
 final class RulesResponseTest extends TestCase
 {
+    /**
+     * @return array<string, mixed>
+     */
     private function loadFixture(): array
     {
         $fixturePath = __DIR__ . '/../../Fixtures/rules.json';
-        $contents = file_get_contents($fixturePath);
+        $contents = file_get_contents($fixturePath) ?: '[]';
 
-        return json_decode($contents ?: '[]', true);
+        try {
+            /** @var array<string, mixed> $decoded */
+            $decoded = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException) {
+            $decoded = [];
+        }
+
+        return $decoded;
     }
 
     public function testParsesFlagsAndRetrievesByKey(): void
@@ -25,7 +35,7 @@ final class RulesResponseTest extends TestCase
         $this->assertSame('2026-01-15', $response->getVersion());
         $flag = $response->getFlagByKey('test-feature');
         $this->assertNotNull($flag);
-        $this->assertSame('test-feature', $flag?->getKey());
+        $this->assertSame('test-feature', $flag->getKey());
         $this->assertNull($response->getFlagByKey('missing-flag'));
     }
 

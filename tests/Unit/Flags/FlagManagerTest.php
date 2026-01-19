@@ -35,16 +35,44 @@ final class FlagManagerTest extends TestCase
         Mockery::close();
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function loadFixture(): array
     {
         $contents = file_get_contents(__DIR__ . '/../../Fixtures/rules.json') ?: '';
 
-        return json_decode($contents, true);
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($contents, true) ?? [];
+
+        return $decoded;
     }
 
     private function fixtureResponse(): RulesResponse
     {
         return RulesResponse::fromArray($this->loadFixture());
+    }
+
+    /**
+     * @return \Mockery\Expectation
+     */
+    private function expectOnce(Mockery\MockInterface $mock, string $method)
+    {
+        /** @var \Mockery\Expectation $expectation */
+        $expectation = $mock->shouldReceive($method);
+
+        return $expectation->once();
+    }
+
+    /**
+     * @return \Mockery\Expectation
+     */
+    private function expectNever(Mockery\MockInterface $mock, string $method)
+    {
+        /** @var \Mockery\Expectation $expectation */
+        $expectation = $mock->shouldReceive($method);
+
+        return $expectation->never();
     }
 
     private function createManager(): FlagManager
@@ -62,11 +90,11 @@ final class FlagManagerTest extends TestCase
     {
         $data = $this->loadFixture();
 
-        $this->cache->shouldReceive('get')->once()->andReturn(json_encode($data));
+        $this->expectOnce($this->cache, 'get')->andReturn(json_encode($data));
         $this->apiClient->shouldNotReceive('getRules');
-        $this->cache->shouldReceive('set')->never();
+        $this->expectNever($this->cache, 'set');
 
-        $this->ruleEngine->shouldReceive('evaluate')->once()->andReturn(['boolean' => false]);
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => false]);
 
         $manager = $this->createManager();
         $flags = $manager->all();
@@ -77,14 +105,14 @@ final class FlagManagerTest extends TestCase
 
     public function testSingleUsesApiWhenCacheMissingAndReportsUsage(): void
     {
-        $this->cache->shouldReceive('get')->once()->andReturn(null);
-        $this->apiClient->shouldReceive('getRules')->once()->andReturn($this->fixtureResponse());
-        $this->cache->shouldReceive('set')->once();
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
 
         $context = Context::single('user', 'user-123');
-        $this->apiClient->shouldReceive('reportUsage')->once()->with('test-feature', $context);
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', $context);
 
-        $this->ruleEngine->shouldReceive('evaluate')->once()->andReturn(['boolean' => true]);
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
 
         $manager = $this->createManager();
         $flag = $manager->withContext($context)->single('test-feature');
@@ -95,10 +123,10 @@ final class FlagManagerTest extends TestCase
 
     public function testSingleThrowsWhenFlagMissingAndNoDefaults(): void
     {
-        $this->cache->shouldReceive('get')->once()->andReturn(null);
-        $this->apiClient->shouldReceive('getRules')->once()->andReturn(new RulesResponse('v1', []));
-        $this->cache->shouldReceive('set')->once();
-        $this->apiClient->shouldReceive('reportUsage')->never();
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn(new RulesResponse('v1', []));
+        $this->expectOnce($this->cache, 'set');
+        $this->expectNever($this->apiClient, 'reportUsage');
 
         $manager = $this->createManager();
 
@@ -108,11 +136,11 @@ final class FlagManagerTest extends TestCase
 
     public function testRefreshRulesReloadsFromApi(): void
     {
-        $this->cache->shouldReceive('get')->never();
-        $this->apiClient->shouldReceive('getRules')->once()->andReturn($this->fixtureResponse());
-        $this->cache->shouldReceive('set')->once();
+        $this->expectNever($this->cache, 'get');
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
 
-        $this->ruleEngine->shouldReceive('evaluate')->once()->andReturn(['boolean' => false]);
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => false]);
 
         $manager = $this->createManager();
         $manager->refreshRules();
@@ -125,11 +153,11 @@ final class FlagManagerTest extends TestCase
 
     public function testInvalidCachedJsonFallsBackToApi(): void
     {
-        $this->cache->shouldReceive('get')->once()->andReturn('{invalid json');
-        $this->apiClient->shouldReceive('getRules')->once()->andReturn($this->fixtureResponse());
-        $this->cache->shouldReceive('set')->once();
+        $this->expectOnce($this->cache, 'get')->andReturn('{invalid json');
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
 
-        $this->ruleEngine->shouldReceive('evaluate')->once()->andReturn(['boolean' => true]);
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
 
         $manager = $this->createManager();
         $flags = $manager->all();

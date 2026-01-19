@@ -32,6 +32,8 @@ final class TargetTest extends TestCase
         $this->assertSame(['number' => 10], $target->getValue()->getValue());
 
         $serialized = $target->jsonSerialize();
+        $this->assertIsArray($serialized);
+        $this->assertIsArray($serialized['value']);
         $this->assertSame('value-v1', $serialized['value']['version']);
         $this->assertSame(['number' => 10], $serialized['value']['value']);
     }

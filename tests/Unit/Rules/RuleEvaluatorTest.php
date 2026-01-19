@@ -18,6 +18,9 @@ use Zenmanage\Rules\RuleValue;
 
 final class RuleEvaluatorTest extends TestCase
 {
+    /**
+     * @param array<int, Rule> $rules
+     */
     private function makeFlagWithRules(array $rules, mixed $targetValue): Flag
     {
         $target = new Target('t', null, null, null, new RuleValue('target-val', $targetValue));
