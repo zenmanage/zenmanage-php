@@ -43,12 +43,7 @@ final class FlagManager implements FlagManagerInterface
 
         $flags = $this->flags ?? [];
         
-        // If we have a context, evaluate each flag
-        if ($this->context) {
-            return array_map(fn($flag) => $this->evaluateFlag($flag), $flags);
-        }
-
-        return $flags;
+        return array_map(fn($flag) => $this->evaluateFlag($flag), $flags);
     }
 
     public function single(string $key, mixed $default = null): Flag
@@ -60,12 +55,7 @@ final class FlagManager implements FlagManagerInterface
                 // Report usage for this flag
                 $this->reportUsage($key);
                 
-                // If we have a context, evaluate the flag
-                if ($this->context) {
-                    return $this->evaluateFlag($flag);
-                }
-
-                return $flag;
+                return $this->evaluateFlag($flag);
             }
         }
 
