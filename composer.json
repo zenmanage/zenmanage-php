@@ -34,9 +34,9 @@
     "scripts": {
         "test": "phpunit",
         "test:coverage": "phpunit --coverage-html coverage",
-        "analyze": "phpstan analyse src tests --level=9",
+        "analyze": "phpstan analyse src tests --level=9 ",
         "format": "php-cs-fixer fix",
-        "format:check": "php-cs-fixer fix --dry-run --diff"
+        "format:check": "php-cs-fixer fix --dry-run --diff --allow-risky=yes"
     },
     "minimum-stability": "stable",
     "prefer-stable": true
