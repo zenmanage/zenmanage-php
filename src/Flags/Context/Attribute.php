@@ -53,7 +53,7 @@ final class Attribute implements JsonSerializable
     {
         return [
             'key' => $this->key,
-            'values' => array_map(fn($v) => ['value' => $v], $this->values),
+            'values' => array_map(fn ($v) => ['value' => $v], $this->values),
         ];
     }
 

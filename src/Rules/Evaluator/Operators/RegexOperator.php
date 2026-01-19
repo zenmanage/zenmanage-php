@@ -16,6 +16,7 @@ final class RegexOperator implements OperatorInterface
         if (!is_string($actual) || !is_string($expected)) {
             return false;
         }
+
         try {
             return preg_match($expected, $actual) === 1;
         } catch (\Exception) {

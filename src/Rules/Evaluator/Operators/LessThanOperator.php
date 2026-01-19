@@ -16,6 +16,7 @@ final class LessThanOperator implements OperatorInterface
         if (!is_numeric($actual) || !is_numeric($expected)) {
             return false;
         }
+
         return $actual < $expected;
     }
 }

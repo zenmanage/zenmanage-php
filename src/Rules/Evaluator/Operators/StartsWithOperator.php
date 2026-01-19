@@ -16,6 +16,7 @@ final class StartsWithOperator implements OperatorInterface
         if (!is_string($actual) || !is_string($expected)) {
             return false;
         }
+
         return str_starts_with($actual, $expected);
     }
 }

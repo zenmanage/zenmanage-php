@@ -1,4 +1,4 @@
-name: PHP SDK CI
+name: ZENMANAGE-PHP SDK CI
 
 on:
   push:

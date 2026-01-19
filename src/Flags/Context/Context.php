@@ -41,21 +41,21 @@ final class Context implements JsonSerializable
         $type = isset($data['type']) && is_string($data['type']) ? $data['type'] : 'user';
         $name = isset($data['name']) && is_string($data['name']) ? $data['name'] : null;
         $identifier = isset($data['identifier']) && is_string($data['identifier']) ? $data['identifier'] : null;
-        
+
         $attributes = [];
-        
+
         // Process attributes array if present
         if (isset($data['attributes']) && is_array($data['attributes'])) {
             foreach ($data['attributes'] as $attrData) {
                 if (!is_array($attrData)) {
                     continue;
                 }
-                
+
                 $key = $attrData['key'] ?? null;
                 if (!is_string($key)) {
                     continue;
                 }
-                
+
                 $values = [];
                 if (isset($attrData['values']) && is_array($attrData['values'])) {
                     foreach ($attrData['values'] as $valueData) {
@@ -66,7 +66,7 @@ final class Context implements JsonSerializable
                         }
                     }
                 }
-                
+
                 if (!empty($values)) {
                     $attributes[] = new Attribute($key, $values);
                 }
@@ -102,7 +102,7 @@ final class Context implements JsonSerializable
     {
         return $this->identifier;
     }
-    
+
     /**
      * @deprecated Use getIdentifier() instead
      */
@@ -155,7 +155,7 @@ final class Context implements JsonSerializable
 
         if (!empty($this->attributes)) {
             $result['attributes'] = array_values(array_map(
-                fn(Attribute $attr) => $attr->jsonSerialize(),
+                fn (Attribute $attr) => $attr->jsonSerialize(),
                 $this->attributes
             ));
         }

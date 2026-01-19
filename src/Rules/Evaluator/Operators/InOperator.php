@@ -16,6 +16,7 @@ final class InOperator implements OperatorInterface
         if (is_array($expected)) {
             return in_array($actual, $expected, true);
         }
+
         return false;
     }
 }

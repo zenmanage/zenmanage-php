@@ -16,6 +16,7 @@ final class EndsWithOperator implements OperatorInterface
         if (!is_string($actual) || !is_string($expected)) {
             return false;
         }
+
         return str_ends_with($actual, $expected);
     }
 }

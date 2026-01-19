@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Zenmanage\Tests\Unit\Config;
 
 use PHPUnit\Framework\TestCase;
-use Zenmanage\Config\Config;
 use Zenmanage\Config\ConfigBuilder;
 use Zenmanage\Exception\ConfigurationException;
 

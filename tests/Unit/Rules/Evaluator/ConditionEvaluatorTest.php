@@ -169,7 +169,7 @@ final class ConditionEvaluatorTest extends TestCase
     }
 
     // Context selector tests (identical to segment but different name)
-    
+
     public function test_context_selector_matches_when_type_and_id_equal(): void
     {
         $condition = new Condition(

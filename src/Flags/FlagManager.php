@@ -42,8 +42,8 @@ final class FlagManager implements FlagManagerInterface
         $this->ensureRulesLoaded();
 
         $flags = $this->flags ?? [];
-        
-        return array_map(fn($flag) => $this->evaluateFlag($flag), $flags);
+
+        return array_map(fn ($flag) => $this->evaluateFlag($flag), $flags);
     }
 
     public function single(string $key, mixed $default = null): Flag
@@ -54,7 +54,7 @@ final class FlagManager implements FlagManagerInterface
             if ($flag->getKey() === $key) {
                 // Report usage for this flag
                 $this->reportUsage($key);
-                
+
                 return $this->evaluateFlag($flag);
             }
         }
@@ -64,6 +64,7 @@ final class FlagManager implements FlagManagerInterface
             $flagFromDefault = $this->createFlagFromDefault($key, $default);
             // Report usage even for default values
             $this->reportUsage($key);
+
             return $flagFromDefault;
         }
 
@@ -72,6 +73,7 @@ final class FlagManager implements FlagManagerInterface
             $flagFromDefault = $this->createFlagFromDefault($key, $this->defaults->get($key));
             // Report usage even for default values
             $this->reportUsage($key);
+
             return $flagFromDefault;
         }
 
@@ -148,8 +150,8 @@ final class FlagManager implements FlagManagerInterface
         $this->logger->info('Fetching rules from API');
 
         // Pass context if available (not anonymous)
-        $contextToSend = ($this->context->getType() !== 'anonymous' && $this->context->getIdentifier() !== null) 
-            ? $this->context 
+        $contextToSend = ($this->context->getType() !== 'anonymous' && $this->context->getIdentifier() !== null)
+            ? $this->context
             : null;
 
         $response = $this->apiClient->getRules($contextToSend);

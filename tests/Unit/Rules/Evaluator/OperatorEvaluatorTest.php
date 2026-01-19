@@ -33,7 +33,7 @@ final class OperatorEvaluatorTest extends TestCase
     {
         $this->assertTrue($this->evaluator->evaluate('contains', 'hello world', 'world'));
         $this->assertFalse($this->evaluator->evaluate('contains', 'hello world', 'foo'));
-        
+
         // Array contains
         $this->assertTrue($this->evaluator->evaluate('contains', ['a', 'b', 'c'], 'b'));
         $this->assertFalse($this->evaluator->evaluate('contains', ['a', 'b', 'c'], 'd'));

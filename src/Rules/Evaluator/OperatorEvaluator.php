@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Zenmanage\Rules\Evaluator;
 
 use Zenmanage\Exception\EvaluationException;
-use Zenmanage\Rules\Evaluator\Operators\OperatorInterface;
+use Zenmanage\Rules\Evaluator\Operators\ContainsOperator;
+use Zenmanage\Rules\Evaluator\Operators\EndsWithOperator;
 use Zenmanage\Rules\Evaluator\Operators\EqualOperator;
-use Zenmanage\Rules\Evaluator\Operators\InOperator;
 use Zenmanage\Rules\Evaluator\Operators\GreaterThanOperator;
 use Zenmanage\Rules\Evaluator\Operators\GreaterThanOrEqualOperator;
+use Zenmanage\Rules\Evaluator\Operators\InOperator;
+use Zenmanage\Rules\Evaluator\Operators\IsNullOperator;
 use Zenmanage\Rules\Evaluator\Operators\LessThanOperator;
 use Zenmanage\Rules\Evaluator\Operators\LessThanOrEqualOperator;
-use Zenmanage\Rules\Evaluator\Operators\IsNullOperator;
-use Zenmanage\Rules\Evaluator\Operators\ContainsOperator;
-use Zenmanage\Rules\Evaluator\Operators\StartsWithOperator;
-use Zenmanage\Rules\Evaluator\Operators\EndsWithOperator;
+use Zenmanage\Rules\Evaluator\Operators\OperatorInterface;
 use Zenmanage\Rules\Evaluator\Operators\RegexOperator;
+use Zenmanage\Rules\Evaluator\Operators\StartsWithOperator;
 
 /**
  * Evaluates operators (equal, not_equal, contains, etc.) on values.
@@ -60,6 +60,7 @@ final class OperatorEvaluator
         }
 
         $result = $impl->evaluate($actual, $expected);
+
         return $negate ? !$result : $result;
     }
 
@@ -70,6 +71,7 @@ final class OperatorEvaluator
                 return $impl;
             }
         }
+
         return null;
     }
 
@@ -113,6 +115,7 @@ final class OperatorEvaluator
         ];
 
         $base = $synonyms[$op] ?? $op;
+
         return [$base, $negate];
     }
 }

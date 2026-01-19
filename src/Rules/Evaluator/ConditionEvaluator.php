@@ -6,10 +6,10 @@ namespace Zenmanage\Rules\Evaluator;
 
 use Zenmanage\Flags\Context\Context;
 use Zenmanage\Rules\Condition;
-use Zenmanage\Rules\Evaluator\Conditions\ConditionEvaluatorInterface;
-use Zenmanage\Rules\Evaluator\Conditions\SegmentConditionEvaluator;
-use Zenmanage\Rules\Evaluator\Conditions\ContextConditionEvaluator;
 use Zenmanage\Rules\Evaluator\Conditions\AttributeConditionEvaluator;
+use Zenmanage\Rules\Evaluator\Conditions\ConditionEvaluatorInterface;
+use Zenmanage\Rules\Evaluator\Conditions\ContextConditionEvaluator;
+use Zenmanage\Rules\Evaluator\Conditions\SegmentConditionEvaluator;
 
 /**
  * Evaluates conditions against a context.
