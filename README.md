@@ -18,6 +18,10 @@ Add feature flags to your PHP application in minutes. Control feature rollouts, 
 composer require zenmanage/zenmanage-php
 ```
 
+## Upgrading
+
+See [UPGRADING.md](UPGRADING.md) for details on breaking changes and migration steps.
+
 **Requirements**: PHP 8.0+
 
 ## Get Started in 60 Seconds

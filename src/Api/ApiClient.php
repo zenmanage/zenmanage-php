@@ -30,6 +30,7 @@ final class ApiClient implements ApiClientInterface
         private readonly string $environmentToken,
         private readonly string $apiEndpoint = self::DEFAULT_API_ENDPOINT,
         private readonly LoggerInterface $logger = new NullLogger(),
+        private readonly bool $enableUsageReporting = true,
         ?Client $httpClient = null,
     ) {
         $this->httpClient = $httpClient ?? new Client([
@@ -63,6 +64,14 @@ final class ApiClient implements ApiClientInterface
 
     public function reportUsage(string $flagKey, ?\Zenmanage\Flags\Context\Context $context = null): void
     {
+        if (!$this->enableUsageReporting) {
+            $this->logger->debug('Usage reporting disabled, skipping API call', [
+                'key' => $flagKey,
+            ]);
+
+            return;
+        }
+
         $attempt = 0;
 
         while ($attempt < self::MAX_RETRIES) {

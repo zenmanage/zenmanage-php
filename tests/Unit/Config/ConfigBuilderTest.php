@@ -45,7 +45,7 @@ final class ConfigBuilderTest extends TestCase
         $this->assertSame('tok_test', $config->getEnvironmentToken());
         $this->assertSame(3600, $config->getCacheTtl());
         $this->assertSame('memory', $config->getCacheBackend());
-        $this->assertFalse($config->isUsageReportingEnabled());
+        $this->assertTrue($config->isUsageReportingEnabled());
     }
 
     public function testCreateWithCustomValues(): void
@@ -55,7 +55,7 @@ final class ConfigBuilderTest extends TestCase
             ->withCacheTtl(7200)
             ->withCacheBackend('filesystem')
             ->withCacheDirectory('/tmp/test')
-            ->enableUsageReporting()
+            ->withUsageReporting(true)
             ->withApiEndpoint('https://custom.api.com')
             ->build();
 
@@ -101,8 +101,7 @@ final class ConfigBuilderTest extends TestCase
     {
         $config = ConfigBuilder::create()
             ->withEnvironmentToken('tok_test')
-            ->enableUsageReporting()
-            ->disableUsageReporting()
+            ->withUsageReporting(false)
             ->build();
 
         $this->assertFalse($config->isUsageReportingEnabled());
@@ -142,7 +141,7 @@ final class ConfigBuilderTest extends TestCase
         $this->assertSame(3600, $config->getCacheTtl());
         $this->assertSame('memory', $config->getCacheBackend());
         $this->assertNull($config->getCacheDirectory());
-        $this->assertFalse($config->isUsageReportingEnabled());
+        $this->assertTrue($config->isUsageReportingEnabled());
         $this->assertSame('https://api.zenmanage.com', $config->getApiEndpoint());
     }
 }

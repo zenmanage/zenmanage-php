@@ -13,7 +13,7 @@ final class ConfigBuilder
     private int $cacheTtl = 3600;
     private string $cacheBackend = 'memory';
     private ?string $cacheDirectory = null;
-    private bool $enableUsageReporting = false;
+    private bool $enableUsageReporting = true;
     private string $apiEndpoint = 'https://api.zenmanage.com';
 
     private function __construct()
@@ -64,9 +64,7 @@ final class ConfigBuilder
         if ($enableUsageReporting !== false) {
             $enabled = filter_var($enableUsageReporting, FILTER_VALIDATE_BOOLEAN);
 
-            if ($enabled) {
-                $builder = $builder->enableUsageReporting();
-            }
+            $builder = $builder->withUsageReporting($enabled);
         }
 
         $apiEndpoint = getenv('ZENMANAGE_API_ENDPOINT') ?: null;
@@ -106,17 +104,28 @@ final class ConfigBuilder
         return $this;
     }
 
-    public function enableUsageReporting(): self
+    public function withUsageReporting(bool $enabled): self
     {
-        $this->enableUsageReporting = true;
+        $this->enableUsageReporting = $enabled;
 
         return $this;
     }
 
+    /**
+     * @deprecated Use withUsageReporting(true) instead.
+     */
+    public function enableUsageReporting(): self
+    {
+        return $this->withUsageReporting(true);
+    }
+
+    /**
+     * @deprecated Use withUsageReporting(false) instead.
+     */
     public function disableUsageReporting(): self
     {
-        $this->enableUsageReporting = false;
-
+        return $this->withUsageReporting(false);
+    }
         return $this;
     }
 

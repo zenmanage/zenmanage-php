@@ -38,6 +38,7 @@ final class Zenmanage
             environmentToken: $config->getEnvironmentToken(),
             apiEndpoint: $config->getApiEndpoint(),
             logger: $logger,
+            enableUsageReporting: $config->isUsageReportingEnabled(),
         );
 
         // Create rule engine

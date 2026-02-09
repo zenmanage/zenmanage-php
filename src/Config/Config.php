@@ -20,7 +20,7 @@ final class Config
         private readonly int $cacheTtl = self::DEFAULT_CACHE_TTL,
         private readonly string $cacheBackend = self::DEFAULT_CACHE_BACKEND,
         private readonly ?string $cacheDirectory = null,
-        private readonly bool $enableUsageReporting = false,
+        private readonly bool $enableUsageReporting = true,
         private readonly string $apiEndpoint = self::DEFAULT_API_ENDPOINT,
     ) {
         $this->validate();
