@@ -126,8 +126,6 @@ final class ConfigBuilder
     {
         return $this->withUsageReporting(false);
     }
-        return $this;
-    }
 
     public function withApiEndpoint(string $endpoint): self
     {
