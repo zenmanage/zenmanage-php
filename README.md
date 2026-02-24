@@ -329,6 +329,8 @@ The SDK supports three types of rule selectors for targeting:
 
 Matches against a list of specific context identifiers:
 
+If a rule value omits `type` (or sets it to `null`), only the `identifier` is compared.
+
 ```php
 // Rule: "Block these specific IPs"
 // Selector: "segment", Values: [{"type": "user", "identifier": "140.248.31.37"}]
@@ -343,6 +345,8 @@ $result = $zenmanage->flags()
 #### 2. Context Selector
 
 Same as segment - matches against context type and identifier:
+
+If a rule value omits `type` (or sets it to `null`), only the `identifier` is compared.
 
 ```php
 // Rule: "Enable for specific users"
