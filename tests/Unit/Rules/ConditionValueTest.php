@@ -26,6 +26,14 @@ final class ConditionValueTest extends TestCase
         $value = ConditionValue::fromArray([]);
 
         $this->assertSame('', $value->getIdentifier());
-        $this->assertSame('user', $value->getType());
+        $this->assertNull($value->getType());
+    }
+
+    public function testTypeIsNullWhenExplicitlyNull(): void
+    {
+        $value = ConditionValue::fromArray(['identifier' => 'user-1', 'type' => null]);
+
+        $this->assertSame('user-1', $value->getIdentifier());
+        $this->assertNull($value->getType());
     }
 }

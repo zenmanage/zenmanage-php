@@ -32,7 +32,8 @@ final class ContextConditionEvaluator implements ConditionEvaluatorInterface
         $contextType = $context->getType();
 
         foreach ($conditionValues as $conditionValue) {
-            if ($conditionValue->getType() !== $contextType) {
+            $conditionType = $conditionValue->getType();
+            if ($conditionType !== null && $conditionType !== $contextType) {
                 continue;
             }
 

@@ -13,7 +13,7 @@ final class ConditionValue implements JsonSerializable
 {
     public function __construct(
         private readonly string $identifier,
-        private readonly string $type,
+        private readonly ?string $type,
     ) {
     }
 
@@ -22,7 +22,7 @@ final class ConditionValue implements JsonSerializable
         return $this->identifier;
     }
 
-    public function getType(): string
+    public function getType(): ?string
     {
         return $this->type;
     }
@@ -33,7 +33,11 @@ final class ConditionValue implements JsonSerializable
     public static function fromArray(array $data): self
     {
         $identifier = isset($data['identifier']) && is_string($data['identifier']) ? $data['identifier'] : '';
-        $type = isset($data['type']) && is_string($data['type']) ? $data['type'] : 'user';
+        $type = null;
+
+        if (array_key_exists('type', $data)) {
+            $type = is_string($data['type']) ? $data['type'] : null;
+        }
 
         return new self(
             identifier: $identifier,
@@ -42,7 +46,7 @@ final class ConditionValue implements JsonSerializable
     }
 
     /**
-     * @return array<string, string>
+     * @return array{identifier: string, type: ?string}
      */
     public function jsonSerialize(): array
     {

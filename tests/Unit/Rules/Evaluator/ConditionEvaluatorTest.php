@@ -98,6 +98,24 @@ final class ConditionEvaluatorTest extends TestCase
         $this->assertTrue($result);
     }
 
+    public function test_segment_selector_matches_by_identifier_when_rule_type_is_null(): void
+    {
+        $condition = new Condition(
+            selector: 'segment',
+            selectorSubtype: null,
+            comparer: 'equal',
+            values: [
+                new ConditionValue('acme-corp', null),
+            ]
+        );
+
+        $context = Context::single('user', 'acme-corp', 'Acme User');
+
+        $result = $this->evaluator->evaluate($condition, $context);
+
+        $this->assertTrue($result);
+    }
+
     public function test_segment_selector_returns_false_when_context_has_no_id(): void
     {
         $condition = new Condition(
@@ -224,6 +242,24 @@ final class ConditionEvaluatorTest extends TestCase
         $result = $this->evaluator->evaluate($condition, $context);
 
         $this->assertFalse($result);
+    }
+
+    public function test_context_selector_matches_by_identifier_when_rule_type_is_null(): void
+    {
+        $condition = new Condition(
+            selector: 'context',
+            selectorSubtype: null,
+            comparer: 'equal',
+            values: [
+                new ConditionValue('acme-corp', null),
+            ]
+        );
+
+        $context = Context::single('user', 'acme-corp', 'Acme User');
+
+        $result = $this->evaluator->evaluate($condition, $context);
+
+        $this->assertTrue($result);
     }
 
     // Attribute selector tests
