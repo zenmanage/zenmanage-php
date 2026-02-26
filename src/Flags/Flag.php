@@ -22,6 +22,7 @@ final class Flag implements JsonSerializable
         private readonly string $name,
         private readonly Target $target,
         private readonly array $rules,
+        private readonly ?Rollout $rollout = null,
     ) {
     }
 
@@ -56,6 +57,11 @@ final class Flag implements JsonSerializable
     public function getRules(): array
     {
         return $this->rules;
+    }
+
+    public function getRollout(): ?Rollout
+    {
+        return $this->rollout;
     }
 
     /**
@@ -156,6 +162,11 @@ final class Flag implements JsonSerializable
         $key = isset($data['key']) && is_string($data['key']) ? $data['key'] : '';
         $name = isset($data['name']) && is_string($data['name']) ? $data['name'] : '';
 
+        $rollout = null;
+        if (isset($data['rollout']) && is_array($data['rollout'])) {
+            $rollout = Rollout::fromArray($data['rollout']);
+        }
+
         return new self(
             version: $version,
             type: $type,
@@ -163,6 +174,7 @@ final class Flag implements JsonSerializable
             name: $name,
             target: Target::fromArray(is_array($data['target'] ?? null) ? $data['target'] : []),
             rules: $rules,
+            rollout: $rollout,
         );
     }
 
@@ -171,7 +183,7 @@ final class Flag implements JsonSerializable
      */
     public function jsonSerialize(): array
     {
-        return [
+        $data = [
             'version' => $this->version,
             'type' => $this->type,
             'key' => $this->key,
@@ -179,6 +191,12 @@ final class Flag implements JsonSerializable
             'target' => $this->target->jsonSerialize(),
             'rules' => array_map(fn ($r) => $r->jsonSerialize(), $this->rules),
         ];
+
+        if ($this->rollout !== null) {
+            $data['rollout'] = $this->rollout->jsonSerialize();
+        }
+
+        return $data;
     }
 
     public function __toString(): string

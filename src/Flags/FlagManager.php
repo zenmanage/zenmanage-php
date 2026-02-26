@@ -237,21 +237,53 @@ final class FlagManager implements FlagManagerInterface
 
     /**
      * Evaluate a flag with the current context.
+     *
+     * When a rollout is active, the SDK determines which target/rules pair to use
+     * by bucketing the context identifier against the rollout percentage.
      */
     private function evaluateFlag(Flag $flag): Flag
     {
-        $evaluatedValue = $this->ruleEngine->evaluate($flag, $this->context);
+        $rollout = $flag->getRollout();
+        $target = $flag->getTarget();
+        $rules = $flag->getRules();
+
+        if ($rollout !== null) {
+            // Rollout is active — determine which target to use via bucketing
+            $contextIdentifier = $this->context->getIdentifier();
+            $inBucket = RolloutBucket::isInBucket(
+                $rollout->getSalt(),
+                $contextIdentifier,
+                $rollout->getPercentage(),
+            );
+
+            if ($inBucket) {
+                // Context is in the rollout bucket — use rollout target & rules
+                $target = $rollout->getTarget();
+                $rules = $rollout->getRules();
+            }
+            // Otherwise keep the fallback target & rules
+        }
+
+        // Build a temporary Flag object with the selected target/rules for rule evaluation
+        $evaluationFlag = new Flag(
+            version: $flag->getVersion(),
+            type: $flag->getType(),
+            key: $flag->getKey(),
+            name: $flag->getName(),
+            target: $target,
+            rules: $rules,
+        );
+
+        $evaluatedValue = $this->ruleEngine->evaluate($evaluationFlag, $this->context);
 
         // Create a new flag with the evaluated value
-        // Since Flag is immutable, we need to reconstruct it
-        // For simplicity, we'll create a new target with the evaluated value
         $newTarget = new Target(
-            version: $flag->getTarget()->getVersion(),
-            expiredAt: $flag->getTarget()->getExpiredAt(),
-            publishedAt: $flag->getTarget()->getPublishedAt(),
-            scheduledAt: $flag->getTarget()->getScheduledAt(),
+            version: $target->getVersion(),
+            expiredAt: $target->getExpiredAt(),
+            publishedAt: $target->getPublishedAt(),
+            scheduledAt: $target->getScheduledAt(),
             value: new \Zenmanage\Rules\RuleValue(
-                version: $flag->getTarget()->getValue()->getVersion(),
+                version: $target->getValue()->getVersion(),
                 value: $evaluatedValue,
             ),
         );
@@ -262,7 +294,7 @@ final class FlagManager implements FlagManagerInterface
             key: $flag->getKey(),
             name: $flag->getName(),
             target: $newTarget,
-            rules: $flag->getRules(),
+            rules: $rules,
         );
     }
 }

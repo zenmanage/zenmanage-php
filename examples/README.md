@@ -15,6 +15,7 @@ php examples/context_based_flags.php
 php examples/defaults.php
 php examples/caching.php
 php examples/ab_testing.php
+php examples/percentage_rollouts.php
 ```
 
 ## Examples
@@ -55,6 +56,14 @@ Demonstrates A/B testing using a string variant flag with context.
 - Evaluate a variant flag (e.g., `landing-page-variant`) via `asString()`.
 - Use an inline default (e.g., `control`) to avoid errors if not yet configured.
 - Server-side rules can target bucket ranges (e.g., 0–49 for `A`, 50–99 for `B`).
+
+### 6) percentage_rollouts.php
+Demonstrates SDK-side percentage rollouts with automatic CRC32B bucketing.
+- The SDK buckets each context identifier deterministically — no manual hashing needed.
+- Basic boolean rollout: users are included or excluded based on their bucket.
+- Rollout with attribute rules: further filter within the rollout group (e.g., country).
+- String variant rollout: serve different string values to rollout vs. fallback.
+- Deterministic bucketing: same user always gets the same result.
 
 ## Notes
 - Output is printed to the console to make behavior easy to observe.
