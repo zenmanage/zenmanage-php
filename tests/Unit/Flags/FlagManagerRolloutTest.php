@@ -16,7 +16,6 @@ use Zenmanage\Flags\FlagManager;
 use Zenmanage\Flags\Rollout;
 use Zenmanage\Flags\Target;
 use Zenmanage\Rules\RuleEngine;
-use Zenmanage\Rules\RuleValue;
 
 /**
  * Integration tests for FlagManager with percentage rollouts.
@@ -35,7 +34,10 @@ final class FlagManagerRolloutTest extends TestCase
     protected function setUp(): void
     {
         $this->apiClient = Mockery::mock(ApiClientInterface::class);
-        $this->apiClient->shouldReceive('reportUsage')->byDefault();
+
+        /** @var \Mockery\Expectation $reportUsage */
+        $reportUsage = $this->apiClient->shouldReceive('reportUsage');
+        $reportUsage->byDefault();
 
         $this->cache = Mockery::mock(CacheInterface::class);
         $this->ruleEngine = new RuleEngine();
@@ -73,6 +75,7 @@ final class FlagManagerRolloutTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function baseFlagArray(array $overrides = []): array
@@ -97,6 +100,7 @@ final class FlagManagerRolloutTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function rolloutArray(array $overrides = []): array
@@ -637,8 +641,11 @@ final class FlagManagerRolloutTest extends TestCase
 
         $json = $flag->jsonSerialize();
         $this->assertArrayHasKey('rollout', $json);
-        $this->assertSame(50, $json['rollout']['percentage']);
-        $this->assertSame('test-salt', $json['rollout']['salt']);
+
+        /** @var array<string, mixed> $rolloutJson */
+        $rolloutJson = $json['rollout'];
+        $this->assertSame(50, $rolloutJson['percentage']);
+        $this->assertSame('test-salt', $rolloutJson['salt']);
     }
 
     public function testRolloutAbsentInJsonWhenNotPresent(): void

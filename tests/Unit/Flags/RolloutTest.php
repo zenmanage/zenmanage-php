@@ -12,6 +12,7 @@ use Zenmanage\Rules\Rule;
 final class RolloutTest extends TestCase
 {
     /**
+     * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
     private function rolloutArray(array $overrides = []): array
