@@ -29,7 +29,6 @@ See [UPGRADING.md](UPGRADING.md) for details on breaking changes and migration s
 - Supported: case-sensitive server keys prefixed with `srv_`
 - Not supported in PHP SDK: client keys (`cli_`) and mobile keys (`mob_`) (initialization fails fast)
 
-Use a server key (`srv_...`) for PHP integrations.
 
 ## Get Started in 60 Seconds
 
@@ -514,7 +513,7 @@ Cache rules to disk for faster performance across multiple requests:
 
 ```php
 $config = ConfigBuilder::create()
-    ->withEnvironmentToken('tok_your_token')
+    ->withEnvironmentToken('srv_your_server_key')
     ->withCacheBackend('filesystem')
     ->withCacheDirectory('/var/cache/zenmanage')
     ->withCacheTtl(300) // 5 minutes
@@ -570,7 +569,7 @@ Get visibility into what the SDK is doing by providing a PSR-3 logger:
 use Psr\Log\LoggerInterface;
 
 $config = ConfigBuilder::create()
-    ->withEnvironmentToken('tok_your_token')
+    ->withEnvironmentToken('srv_your_server_key')
     ->withLogger($yourLogger)
     ->build();
 ```
