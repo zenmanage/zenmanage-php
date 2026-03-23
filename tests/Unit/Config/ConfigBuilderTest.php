@@ -39,10 +39,10 @@ final class ConfigBuilderTest extends TestCase
     public function testCreateWithDefaults(): void
     {
         $config = ConfigBuilder::create()
-            ->withEnvironmentToken('tok_test')
+            ->withEnvironmentToken('srv_test')
             ->build();
 
-        $this->assertSame('tok_test', $config->getEnvironmentToken());
+        $this->assertSame('srv_test', $config->getEnvironmentToken());
         $this->assertSame(3600, $config->getCacheTtl());
         $this->assertSame('memory', $config->getCacheBackend());
         $this->assertTrue($config->isUsageReportingEnabled());
@@ -51,7 +51,7 @@ final class ConfigBuilderTest extends TestCase
     public function testCreateWithCustomValues(): void
     {
         $config = ConfigBuilder::create()
-            ->withEnvironmentToken('tok_test')
+            ->withEnvironmentToken('srv_test')
             ->withCacheTtl(7200)
             ->withCacheBackend('filesystem')
             ->withCacheDirectory('/tmp/test')
@@ -59,7 +59,7 @@ final class ConfigBuilderTest extends TestCase
             ->withApiEndpoint('https://custom.api.com')
             ->build();
 
-        $this->assertSame('tok_test', $config->getEnvironmentToken());
+        $this->assertSame('srv_test', $config->getEnvironmentToken());
         $this->assertSame(7200, $config->getCacheTtl());
         $this->assertSame('filesystem', $config->getCacheBackend());
         $this->assertSame('/tmp/test', $config->getCacheDirectory());
@@ -81,7 +81,7 @@ final class ConfigBuilderTest extends TestCase
         $this->expectExceptionMessage('Invalid cache backend');
 
         ConfigBuilder::create()
-            ->withEnvironmentToken('tok_test')
+            ->withEnvironmentToken('srv_test')
             ->withCacheBackend('invalid')
             ->build();
     }
@@ -92,7 +92,7 @@ final class ConfigBuilderTest extends TestCase
         $this->expectExceptionMessage('Cache directory is required');
 
         ConfigBuilder::create()
-            ->withEnvironmentToken('tok_test')
+            ->withEnvironmentToken('srv_test')
             ->withCacheBackend('filesystem')
             ->build();
     }
@@ -100,7 +100,7 @@ final class ConfigBuilderTest extends TestCase
     public function testDisableUsageReporting(): void
     {
         $config = ConfigBuilder::create()
-            ->withEnvironmentToken('tok_test')
+            ->withEnvironmentToken('srv_test')
             ->withUsageReporting(false)
             ->build();
 
@@ -109,7 +109,7 @@ final class ConfigBuilderTest extends TestCase
 
     public function testFromEnvironmentAppliesAllVariables(): void
     {
-        putenv('ZENMANAGE_ENVIRONMENT_TOKEN=tok_env');
+        putenv('ZENMANAGE_ENVIRONMENT_TOKEN=srv_env');
         putenv('ZENMANAGE_CACHE_TTL=1800');
         putenv('ZENMANAGE_CACHE_BACKEND=filesystem');
         putenv('ZENMANAGE_CACHE_DIR=/tmp/cache-dir');
@@ -118,7 +118,7 @@ final class ConfigBuilderTest extends TestCase
 
         $config = ConfigBuilder::fromEnvironment()->build();
 
-        $this->assertSame('tok_env', $config->getEnvironmentToken());
+        $this->assertSame('srv_env', $config->getEnvironmentToken());
         $this->assertSame(1800, $config->getCacheTtl());
         $this->assertSame('filesystem', $config->getCacheBackend());
         $this->assertSame('/tmp/cache-dir', $config->getCacheDirectory());
@@ -128,7 +128,7 @@ final class ConfigBuilderTest extends TestCase
 
     public function testFromEnvironmentFallsBackToDefaults(): void
     {
-        putenv('ZENMANAGE_ENVIRONMENT_TOKEN=tok_env_default');
+        putenv('ZENMANAGE_ENVIRONMENT_TOKEN=srv_env_default');
         putenv('ZENMANAGE_CACHE_TTL');
         putenv('ZENMANAGE_CACHE_BACKEND');
         putenv('ZENMANAGE_CACHE_DIR');
@@ -137,11 +137,51 @@ final class ConfigBuilderTest extends TestCase
 
         $config = ConfigBuilder::fromEnvironment()->build();
 
-        $this->assertSame('tok_env_default', $config->getEnvironmentToken());
+        $this->assertSame('srv_env_default', $config->getEnvironmentToken());
         $this->assertSame(3600, $config->getCacheTtl());
         $this->assertSame('memory', $config->getCacheBackend());
         $this->assertNull($config->getCacheDirectory());
         $this->assertTrue($config->isUsageReportingEnabled());
         $this->assertSame('https://api.zenmanage.com', $config->getApiEndpoint());
+    }
+
+    public function testCaseSensitiveServerKeyPrefixIsRequired(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Expected a case-sensitive server key prefixed with srv_.');
+
+        ConfigBuilder::create()
+            ->withEnvironmentToken('SRV_uppercase_prefix')
+            ->build();
+    }
+
+    public function testClientKeyIsRejected(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Unsupported key type for PHP SDK: client key provided (cli_).');
+
+        ConfigBuilder::create()
+            ->withEnvironmentToken('cli_client_test')
+            ->build();
+    }
+
+    public function testMobileKeyIsRejected(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Unsupported key type for PHP SDK: mobile key provided (mob_).');
+
+        ConfigBuilder::create()
+            ->withEnvironmentToken('mob_mobile_test')
+            ->build();
+    }
+
+    public function testNonServerKeyPrefixIsRejected(): void
+    {
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessage('Expected a case-sensitive server key prefixed with srv_.');
+
+        ConfigBuilder::create()
+            ->withEnvironmentToken('tok_legacy_test')
+            ->build();
     }
 }

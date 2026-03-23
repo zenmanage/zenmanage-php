@@ -142,4 +142,37 @@ final class ApiClientTest extends TestCase
         $client->reportUsage('flag-key');
         $this->assertTrue(true); // ensure no exception bubbles
     }
+
+    public function testClientAgentCanBeOverridden(): void
+    {
+        $client = new ApiClient(
+            environmentToken: 'env-token',
+            clientAgent: 'zenmanage-laravel',
+        );
+
+        $readClientAgent = \Closure::bind(
+            static fn (ApiClient $apiClient): string => $apiClient->clientAgent,
+            null,
+            ApiClient::class,
+        );
+
+        $this->assertIsCallable($readClientAgent);
+        $this->assertSame('zenmanage-laravel', $readClientAgent($client));
+    }
+
+    public function testDefaultClientAgentIsRecognized(): void
+    {
+        $client = new ApiClient(environmentToken: 'env-token');
+
+        $readClientAgent = \Closure::bind(
+            static fn (ApiClient $apiClient): string => $apiClient->clientAgent,
+            null,
+            ApiClient::class,
+        );
+
+        $this->assertIsCallable($readClientAgent);
+        $clientAgent = $readClientAgent($client);
+
+        $this->assertContains($clientAgent, ['zenmanage-php', 'zenmanage-laravel']);
+    }
 }

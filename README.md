@@ -24,9 +24,16 @@ See [UPGRADING.md](UPGRADING.md) for details on breaking changes and migration s
 
 **Requirements**: PHP 8.0+
 
+## Key Compatibility
+
+- Supported: case-sensitive server keys prefixed with `srv_`
+- Not supported in PHP SDK: client keys (`cli_`) and mobile keys (`mob_`) (initialization fails fast)
+
+Use a server key (`srv_...`) for PHP integrations.
+
 ## Get Started in 60 Seconds
 
-1. Get your environment token from [zenmanage.com](https://zenmanage.com)
+1. Get your server key (`srv_...`) from [zenmanage.com](https://zenmanage.com)
 2. Initialize the SDK:
 
 ```php
@@ -35,7 +42,7 @@ use Zenmanage\Zenmanage;
 
 $zenmanage = new Zenmanage(
     ConfigBuilder::create()
-        ->withEnvironmentToken('tok_your_token_here')
+    ->withEnvironmentToken('srv_your_server_key_here')
         ->build()
 );
 ```

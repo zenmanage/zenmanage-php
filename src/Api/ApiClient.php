@@ -22,9 +22,11 @@ final class ApiClient implements ApiClientInterface
     private const MAX_RETRIES = 3;
     private const RETRY_DELAY_MS = 100;
     private const SDK_VERSION = '2.0.0';
-    private const CLIENT_AGENT = 'zenmanage-php';
+    private const PHP_CLIENT_AGENT = 'zenmanage-php';
+    private const LARAVEL_CLIENT_AGENT = 'zenmanage-laravel';
 
     private readonly Client $httpClient;
+    private readonly string $clientAgent;
 
     public function __construct(
         private readonly string $environmentToken,
@@ -32,16 +34,32 @@ final class ApiClient implements ApiClientInterface
         private readonly LoggerInterface $logger = new NullLogger(),
         private readonly bool $enableUsageReporting = true,
         ?Client $httpClient = null,
+        ?string $clientAgent = null,
     ) {
+        $this->clientAgent = $this->resolveClientAgent($clientAgent);
+
         $this->httpClient = $httpClient ?? new Client([
             'base_uri' => $this->apiEndpoint,
             'timeout' => 10.0,
             'headers' => [
                 'Accept' => 'application/json',
                 'X-API-Key' => $this->environmentToken,
-                'X-ZEN-CLIENT-AGENT' => self::CLIENT_AGENT . '/' . self::SDK_VERSION,
+                'X-ZEN-CLIENT-AGENT' => $this->clientAgent . '/' . self::SDK_VERSION,
             ],
         ]);
+    }
+
+    private function resolveClientAgent(?string $clientAgent): string
+    {
+        if ($clientAgent !== null && $clientAgent !== '') {
+            return $clientAgent;
+        }
+
+        if (defined('LARAVEL_START') || class_exists('Illuminate\\Foundation\\Application')) {
+            return self::LARAVEL_CLIENT_AGENT;
+        }
+
+        return self::PHP_CLIENT_AGENT;
     }
 
     public function getRules(): RulesResponse
