@@ -160,6 +160,46 @@ final class ApiClientTest extends TestCase
         $this->assertSame('zenmanage-laravel', $readClientAgent($client));
     }
 
+    public function testSdkVersionCanBeOverridden(): void
+    {
+        $client = new ApiClient(
+            environmentToken: 'env-token',
+            sdkVersion: '9.9.9',
+        );
+
+        $readSdkVersion = \Closure::bind(
+            static fn (ApiClient $apiClient): string => $apiClient->sdkVersion,
+            null,
+            ApiClient::class,
+        );
+
+        $this->assertIsCallable($readSdkVersion);
+        $this->assertSame('9.9.9', $readSdkVersion($client));
+    }
+
+    public function testClientHeaderUsesOverrides(): void
+    {
+        $client = new ApiClient(
+            environmentToken: 'env-token',
+            clientAgent: 'zenmanage-laravel',
+            sdkVersion: '9.9.9',
+        );
+
+        $readHttpClient = \Closure::bind(
+            static fn (ApiClient $apiClient): Client => $apiClient->httpClient,
+            null,
+            ApiClient::class,
+        );
+
+        $this->assertIsCallable($readHttpClient);
+        $httpClient = $readHttpClient($client);
+        $headers = $httpClient->getConfig('headers');
+
+        $this->assertIsArray($headers);
+        $this->assertArrayHasKey('X-ZEN-CLIENT-AGENT', $headers);
+        $this->assertSame('zenmanage-laravel/9.9.9', $headers['X-ZEN-CLIENT-AGENT']);
+    }
+
     public function testDefaultClientAgentIsRecognized(): void
     {
         $client = new ApiClient(environmentToken: 'env-token');

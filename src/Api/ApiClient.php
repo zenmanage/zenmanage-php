@@ -21,22 +21,25 @@ final class ApiClient implements ApiClientInterface
     private const RULES_PATH = '/v1/flag-json';
     private const MAX_RETRIES = 3;
     private const RETRY_DELAY_MS = 100;
-    private const SDK_VERSION = '2.0.0';
+    private const DEFAULT_SDK_VERSION = '4.0.3';
     private const PHP_CLIENT_AGENT = 'zenmanage-php';
     private const LARAVEL_CLIENT_AGENT = 'zenmanage-laravel';
 
     private readonly Client $httpClient;
     private readonly string $clientAgent;
+    private readonly string $sdkVersion;
 
     public function __construct(
         private readonly string $environmentToken,
         private readonly string $apiEndpoint = self::DEFAULT_API_ENDPOINT,
         private readonly LoggerInterface $logger = new NullLogger(),
         private readonly bool $enableUsageReporting = true,
+        ?string $sdkVersion = null,
         ?Client $httpClient = null,
         ?string $clientAgent = null,
     ) {
         $this->clientAgent = $this->resolveClientAgent($clientAgent);
+        $this->sdkVersion = $this->resolveSdkVersion($sdkVersion);
 
         $this->httpClient = $httpClient ?? new Client([
             'base_uri' => $this->apiEndpoint,
@@ -44,7 +47,7 @@ final class ApiClient implements ApiClientInterface
             'headers' => [
                 'Accept' => 'application/json',
                 'X-API-Key' => $this->environmentToken,
-                'X-ZEN-CLIENT-AGENT' => $this->clientAgent . '/' . self::SDK_VERSION,
+                'X-ZEN-CLIENT-AGENT' => $this->clientAgent . '/' . $this->sdkVersion,
             ],
         ]);
     }
@@ -60,6 +63,29 @@ final class ApiClient implements ApiClientInterface
         }
 
         return self::PHP_CLIENT_AGENT;
+    }
+
+    private function resolveSdkVersion(?string $sdkVersion): string
+    {
+        if ($sdkVersion !== null && $sdkVersion !== '') {
+            return $sdkVersion;
+        }
+
+        if (class_exists(\Composer\InstalledVersions::class)) {
+            try {
+                if (\Composer\InstalledVersions::isInstalled('zenmanage/zenmanage-php')) {
+                    $version = \Composer\InstalledVersions::getPrettyVersion('zenmanage/zenmanage-php');
+
+                    if (is_string($version) && $version !== '') {
+                        return $version;
+                    }
+                }
+            } catch (\Throwable) {
+                // Fallback to default when composer metadata is unavailable.
+            }
+        }
+
+        return self::DEFAULT_SDK_VERSION;
     }
 
     public function getRules(): RulesResponse

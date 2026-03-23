@@ -39,6 +39,8 @@ final class Zenmanage
             apiEndpoint: $config->getApiEndpoint(),
             logger: $logger,
             enableUsageReporting: $config->isUsageReportingEnabled(),
+            sdkVersion: $config->getSdkVersion(),
+            clientAgent: $config->getClientAgent(),
         );
 
         // Create rule engine

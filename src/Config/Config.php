@@ -25,6 +25,8 @@ final class Config
         private readonly ?string $cacheDirectory = null,
         private readonly bool $enableUsageReporting = true,
         private readonly string $apiEndpoint = self::DEFAULT_API_ENDPOINT,
+        private readonly ?string $sdkVersion = null,
+        private readonly ?string $clientAgent = null,
     ) {
         $this->validate();
     }
@@ -59,6 +61,16 @@ final class Config
         return $this->apiEndpoint;
     }
 
+    public function getSdkVersion(): ?string
+    {
+        return $this->sdkVersion;
+    }
+
+    public function getClientAgent(): ?string
+    {
+        return $this->clientAgent;
+    }
+
     private function validate(): void
     {
         if (empty($this->environmentToken)) {
@@ -87,6 +99,14 @@ final class Config
 
         if ($this->cacheBackend === 'filesystem' && empty($this->cacheDirectory)) {
             throw new ConfigurationException('Cache directory is required for filesystem cache backend');
+        }
+
+        if ($this->sdkVersion !== null && $this->sdkVersion === '') {
+            throw new ConfigurationException('SDK version cannot be an empty string');
+        }
+
+        if ($this->clientAgent !== null && $this->clientAgent === '') {
+            throw new ConfigurationException('Client agent cannot be an empty string');
         }
     }
 }

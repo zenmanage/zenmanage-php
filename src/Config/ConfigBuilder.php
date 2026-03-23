@@ -15,6 +15,8 @@ final class ConfigBuilder
     private ?string $cacheDirectory = null;
     private bool $enableUsageReporting = true;
     private string $apiEndpoint = 'https://api.zenmanage.com';
+    private ?string $sdkVersion = null;
+    private ?string $clientAgent = null;
 
     private function __construct()
     {
@@ -134,6 +136,20 @@ final class ConfigBuilder
         return $this;
     }
 
+    public function withSdkVersion(string $sdkVersion): self
+    {
+        $this->sdkVersion = $sdkVersion;
+
+        return $this;
+    }
+
+    public function withClientAgent(string $clientAgent): self
+    {
+        $this->clientAgent = $clientAgent;
+
+        return $this;
+    }
+
     /**
      * Build the Config object.
      */
@@ -146,6 +162,8 @@ final class ConfigBuilder
             cacheDirectory: $this->cacheDirectory,
             enableUsageReporting: $this->enableUsageReporting,
             apiEndpoint: $this->apiEndpoint,
+            sdkVersion: $this->sdkVersion,
+            clientAgent: $this->clientAgent,
         );
     }
 }

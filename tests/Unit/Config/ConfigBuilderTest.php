@@ -57,6 +57,8 @@ final class ConfigBuilderTest extends TestCase
             ->withCacheDirectory('/tmp/test')
             ->withUsageReporting(true)
             ->withApiEndpoint('https://custom.api.com')
+            ->withSdkVersion('9.9.9')
+            ->withClientAgent('zenmanage-laravel')
             ->build();
 
         $this->assertSame('srv_test', $config->getEnvironmentToken());
@@ -65,6 +67,8 @@ final class ConfigBuilderTest extends TestCase
         $this->assertSame('/tmp/test', $config->getCacheDirectory());
         $this->assertTrue($config->isUsageReportingEnabled());
         $this->assertSame('https://custom.api.com', $config->getApiEndpoint());
+        $this->assertSame('9.9.9', $config->getSdkVersion());
+        $this->assertSame('zenmanage-laravel', $config->getClientAgent());
     }
 
     public function testMissingEnvironmentToken(): void
@@ -124,6 +128,8 @@ final class ConfigBuilderTest extends TestCase
         $this->assertSame('/tmp/cache-dir', $config->getCacheDirectory());
         $this->assertTrue($config->isUsageReportingEnabled());
         $this->assertSame('https://env.example.com', $config->getApiEndpoint());
+        $this->assertNull($config->getSdkVersion());
+        $this->assertNull($config->getClientAgent());
     }
 
     public function testFromEnvironmentFallsBackToDefaults(): void
@@ -143,6 +149,8 @@ final class ConfigBuilderTest extends TestCase
         $this->assertNull($config->getCacheDirectory());
         $this->assertTrue($config->isUsageReportingEnabled());
         $this->assertSame('https://api.zenmanage.com', $config->getApiEndpoint());
+        $this->assertNull($config->getSdkVersion());
+        $this->assertNull($config->getClientAgent());
     }
 
     public function testCaseSensitiveServerKeyPrefixIsRequired(): void
