@@ -128,6 +128,24 @@ final class ApiClientTest extends TestCase
         $this->assertTrue(true); // avoid risky test warning
     }
 
+    public function testReportUsageDoesNotSendHeaderForAnonymousContext(): void
+    {
+        $httpClient = Mockery::mock(Client::class);
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with(
+            '/v1/flags/example/usage',
+            Mockery::on(function (array $args): bool {
+                return !isset($args['headers']['X-ZENMANAGE-CONTEXT']);
+            })
+        )->andReturn(new Response(200));
+
+        $client = $this->makeClient($httpClient);
+        $client->reportUsage('example', new Context('anonymous'));
+
+        $this->assertTrue(true); // avoid risky test warning
+    }
+
     public function testReportUsageSwallowsErrorsAfterRetries(): void
     {
         $httpClient = Mockery::mock(Client::class);

@@ -53,7 +53,7 @@ final class FlagManager implements FlagManagerInterface
         foreach ($this->flags ?? [] as $flag) {
             if ($flag->getKey() === $key) {
                 // Report usage for this flag
-                $this->reportUsage($key, $this->context);
+                $this->reportUsage($key, $this->getUsageContext());
 
                 return $this->evaluateFlag($flag);
             }
@@ -63,7 +63,7 @@ final class FlagManager implements FlagManagerInterface
         if ($default !== null) {
             $flagFromDefault = $this->createFlagFromDefault($key, $default);
             // Report usage even for default values
-            $this->reportUsage($key, $this->context);
+            $this->reportUsage($key, $this->getUsageContext());
 
             return $flagFromDefault;
         }
@@ -72,7 +72,7 @@ final class FlagManager implements FlagManagerInterface
         if ($this->defaults->has($key)) {
             $flagFromDefault = $this->createFlagFromDefault($key, $this->defaults->get($key));
             // Report usage even for default values
-            $this->reportUsage($key, $this->context);
+            $this->reportUsage($key, $this->getUsageContext());
 
             return $flagFromDefault;
         }
@@ -99,6 +99,20 @@ final class FlagManager implements FlagManagerInterface
     public function reportUsage(string $key, ?Context $context = null): void
     {
         $this->apiClient->reportUsage($key, $context);
+    }
+
+    private function getUsageContext(): ?Context
+    {
+        if (
+            $this->context->getType() === 'anonymous'
+            && $this->context->getName() === null
+            && $this->context->getIdentifier() === null
+            && $this->context->getAttributes() === []
+        ) {
+            return null;
+        }
+
+        return $this->context;
     }
 
     public function refreshRules(): void

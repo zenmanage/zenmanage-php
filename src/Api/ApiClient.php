@@ -11,6 +11,7 @@ use Psr\Log\NullLogger;
 use Zenmanage\Api\Response\RulesResponse;
 use Zenmanage\Exception\FetchRulesException;
 use Zenmanage\Exception\InvalidRulesException;
+use Zenmanage\Flags\Context\Context;
 
 /**
  * API client for communicating with the Zenmanage service.
@@ -106,7 +107,7 @@ final class ApiClient implements ApiClientInterface
         return $this->throwFetchRulesException($lastException);
     }
 
-    public function reportUsage(string $flagKey, ?\Zenmanage\Flags\Context\Context $context = null): void
+    public function reportUsage(string $flagKey, ?Context $context = null): void
     {
         if (!$this->enableUsageReporting) {
             $this->logger->debug('Usage reporting disabled, skipping API call', [
@@ -127,7 +128,7 @@ final class ApiClient implements ApiClientInterface
 
                 // Build headers with optional context
                 $headers = [];
-                if ($context !== null) {
+                if ($context !== null && $this->shouldSendContext($context)) {
                     $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
                 }
 
@@ -161,6 +162,16 @@ final class ApiClient implements ApiClientInterface
                 }
             }
         }
+    }
+
+    private function shouldSendContext(Context $context): bool
+    {
+        return !(
+            $context->getType() === 'anonymous'
+            && $context->getName() === null
+            && $context->getIdentifier() === null
+            && $context->getAttributes() === []
+        );
     }
 
     /**

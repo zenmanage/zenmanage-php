@@ -54,7 +54,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithInlineDefault(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('non-existent-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('non-existent-flag', null)->andReturnNull();
 
         $manager = $this->createFlagManager();
 
@@ -68,7 +68,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleInlineDefaultTakesPriorityOverCollection(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', null)->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -85,7 +85,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleFallsBackToCollectionWhenNoInlineDefault(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', null)->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -102,9 +102,9 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithDifferentTypes(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('bool-flag', Mockery::any())->andReturnNull();
-        $this->apiClient->shouldReceive('reportUsage')->with('num-flag', Mockery::any())->andReturnNull();
-        $this->apiClient->shouldReceive('reportUsage')->with('str-flag', Mockery::any())->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('bool-flag', null)->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('num-flag', null)->andReturnNull();
+        $this->apiClient->shouldReceive('reportUsage')->with('str-flag', null)->andReturnNull();
 
         $manager = $this->createFlagManager();
 
