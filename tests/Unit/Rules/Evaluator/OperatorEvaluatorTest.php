@@ -45,10 +45,22 @@ final class OperatorEvaluatorTest extends TestCase
         $this->assertFalse($this->evaluator->evaluate('startswith', 'hello world', 'world'));
     }
 
+    public function testNotStartsWithOperator(): void
+    {
+        $this->assertTrue($this->evaluator->evaluate('notstartswith', 'hello world', 'world'));
+        $this->assertFalse($this->evaluator->evaluate('notstartswith', 'hello world', 'hello'));
+    }
+
     public function testEndsWithOperator(): void
     {
         $this->assertTrue($this->evaluator->evaluate('endswith', 'hello world', 'world'));
         $this->assertFalse($this->evaluator->evaluate('endswith', 'hello world', 'hello'));
+    }
+
+    public function testNotEndsWithOperator(): void
+    {
+        $this->assertTrue($this->evaluator->evaluate('notendswith', 'hello world', 'hello'));
+        $this->assertFalse($this->evaluator->evaluate('notendswith', 'hello world', 'world'));
     }
 
     public function testGreaterThanOperator(): void
@@ -126,7 +138,8 @@ final class OperatorEvaluatorTest extends TestCase
 
     public function testNegatedContainsUsesNormalizedOperator(): void
     {
-        $this->assertFalse($this->evaluator->evaluate('not_contains', 'hello', 'he'));
+        $this->assertFalse($this->evaluator->evaluate('notcontains', 'hello', 'he'));
+        $this->assertTrue($this->evaluator->evaluate('notcontains', 'hello', 'xyz'));
     }
 
     public function testRegexOperatorSupportsAndEvaluates(): void

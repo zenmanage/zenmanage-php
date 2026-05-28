@@ -157,7 +157,7 @@ final class ConditionEvaluatorTest extends TestCase
         $condition = new Condition(
             selector: 'segment',
             selectorSubtype: null,
-            comparer: 'starts_with',
+            comparer: 'startswith',
             values: [
                 new ConditionValue('192.168.', 'user'),
             ]
