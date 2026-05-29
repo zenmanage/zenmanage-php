@@ -8,6 +8,7 @@ use Mockery;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Zenmanage\Api\ApiClientInterface;
+use Zenmanage\Api\Response\RulesResponse;
 use Zenmanage\Cache\CacheInterface;
 use Zenmanage\Flags\Context\Attribute;
 use Zenmanage\Flags\Context\Context;
@@ -726,5 +727,576 @@ final class FlagManagerRolloutTest extends TestCase
 
         // Each flag should be evaluated independently with its own salt
         $this->assertCount(2, $allFlags);
+    }
+
+    // =========================================================================
+    // Helpers — rule-based scenarios (parity coverage)
+    // =========================================================================
+
+    // Cross-SDK CRC32b rollout vectors (from RolloutBucketTest):
+    //   salt=abc123, identifier=ctx-beta  → bucket 3  → IN  20% rollout
+    //   salt=abc123, identifier=ctx-alpha → bucket 54 → NOT in 20% rollout
+    private const P_SALT = 'abc123';
+    private const P_C3   = 'ctx-beta';   // bucket 3  → IN
+    private const P_C4   = 'ctx-alpha';  // bucket 54 → NOT in
+
+    /** @return array<string, mixed> */
+    private function boolFlagArray(string $key, bool $base, array $rules = [], ?array $rollout = null): array
+    {
+        $flag = [
+            'version' => "fla_{$key}",
+            'type' => 'boolean',
+            'key' => $key,
+            'name' => $key,
+            'target' => [
+                'version' => "tar_{$key}",
+                'expired_at' => null,
+                'published_at' => null,
+                'scheduled_at' => null,
+                'value' => ['version' => 'v1', 'value' => ['boolean' => $base]],
+            ],
+            'rules' => $rules,
+        ];
+
+        if ($rollout !== null) {
+            $flag['rollout'] = $rollout;
+        }
+
+        return $flag;
+    }
+
+    /** @return array<string, mixed> */
+    private function stringFlagArray(string $key, string $base, array $rules = []): array
+    {
+        return [
+            'version' => "fla_{$key}",
+            'type' => 'string',
+            'key' => $key,
+            'name' => $key,
+            'target' => [
+                'version' => "tar_{$key}",
+                'expired_at' => null,
+                'published_at' => null,
+                'scheduled_at' => null,
+                'value' => ['version' => 'v1', 'value' => ['string' => $base]],
+            ],
+            'rules' => $rules,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function numberFlagArray(string $key, int|float $base): array
+    {
+        return [
+            'version' => "fla_{$key}",
+            'type' => 'number',
+            'key' => $key,
+            'name' => $key,
+            'target' => [
+                'version' => "tar_{$key}",
+                'expired_at' => null,
+                'published_at' => null,
+                'scheduled_at' => null,
+                'value' => ['version' => 'v1', 'value' => ['number' => $base]],
+            ],
+            'rules' => [],
+        ];
+    }
+
+    /**
+     * Build a rule array (for both segment and attribute selectors).
+     *
+     * @param array<int, array<string, mixed>> $values
+     * @return array<string, mixed>
+     */
+    private function ruleFor(int $pos, string $selector, ?string $subtype, string $comparer, array $values, mixed $ruleValue, string $valueType = 'boolean'): array
+    {
+        return [
+            'version' => "rul_{$pos}",
+            'description' => "Rule {$pos}",
+            'criteria' => [
+                'selector' => $selector,
+                'selector_subtype' => $subtype,
+                'comparer' => $comparer,
+                'values' => $values,
+            ],
+            'position' => $pos,
+            'value' => ['version' => 'v1', 'value' => [$valueType => $ruleValue]],
+        ];
+    }
+
+    /**
+     * Build a rollout config with optional gate rules.
+     *
+     * @param array<int, array<string, mixed>> $rules
+     * @return array<string, mixed>
+     */
+    private function parityRollout(int $percentage, string $salt, array $rules = []): array
+    {
+        return [
+            'target' => [
+                'version' => 'tar_rollout',
+                'expired_at' => null,
+                'published_at' => null,
+                'scheduled_at' => null,
+                'value' => ['version' => 'v1', 'value' => ['boolean' => true]],
+            ],
+            'rules' => $rules,
+            'percentage' => $percentage,
+            'salt' => $salt,
+            'status' => 'active',
+        ];
+    }
+
+    // ---- Cross-SDK parity context fixtures ----
+
+    /** C1: user-us-free */
+    private function parityC1(): Context
+    {
+        return new Context('user', 'Alice US Free', 'user-us-free', [
+            new Attribute('country', ['US']),
+            new Attribute('plan', ['free']),
+            new Attribute('age', ['25']),
+            new Attribute('email', ['alice@acme.com']),
+            new Attribute('tier', ['1']),
+            new Attribute('tags', ['alpha', 'beta']),
+        ]);
+    }
+
+    /** C2: user-ca-pro */
+    private function parityC2(): Context
+    {
+        return new Context('user', 'Bob CA Pro', 'user-ca-pro', [
+            new Attribute('country', ['CA']),
+            new Attribute('plan', ['pro']),
+            new Attribute('age', ['42']),
+            new Attribute('email', ['bob@acme.ca']),
+            new Attribute('tier', ['3']),
+            new Attribute('tags', ['beta', 'gamma']),
+        ]);
+    }
+
+    /** C3: rollout-included — abc123 + ctx-beta → bucket 3 → IN 20% */
+    private function parityC3(): Context
+    {
+        return new Context('user', 'Rollout In', self::P_C3, [
+            new Attribute('country', ['US']),
+        ]);
+    }
+
+    /** C4: rollout-excluded — abc123 + ctx-alpha → bucket 54 → NOT in 20% */
+    private function parityC4(): Context
+    {
+        return new Context('user', 'Rollout Out', self::P_C4, [
+            new Attribute('country', ['US']),
+        ]);
+    }
+
+    /** C5: shared-123 as type=user */
+    private function parityC5(): Context
+    {
+        return new Context('user', 'Shared User', 'shared-123');
+    }
+
+    /** C6: shared-123 as type=organization */
+    private function parityC6(): Context
+    {
+        return new Context('organization', 'Shared Org', 'shared-123');
+    }
+
+    // =========================================================================
+    // Static base values (real RuleEngine end-to-end, no rules)
+    // =========================================================================
+
+    public function testStaticBoolTrueBaseValueReturnsTrue(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('static-on', true)]);
+
+        $this->assertTrue($this->createManager()->single('static-on')->asBool());
+    }
+
+    public function testStaticStringBaseValueReturnsString(): void
+    {
+        $this->cacheWith([$this->stringFlagArray('static-str', 'control')]);
+
+        $this->assertSame('control', $this->createManager()->single('static-str')->asString());
+    }
+
+    public function testStaticNumberBaseValueReturnsNumber(): void
+    {
+        $this->cacheWith([$this->numberFlagArray('static-num', 1500)]);
+
+        $this->assertSame(1500.0, (float) $this->createManager()->single('static-num')->asNumber());
+    }
+
+    // =========================================================================
+    // Segment (context identifier) rule evaluation
+    // =========================================================================
+
+    public function testSegmentRuleMatchesContextByIdentifier(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-eq', false, [
+            $this->ruleFor(1, 'segment', null, 'equal', [['identifier' => 'user-us-free', 'type' => 'user']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC1())->single('seg-eq')->asBool());
+    }
+
+    public function testSegmentRuleDoesNotMatchDifferentIdentifier(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-eq', false, [
+            $this->ruleFor(1, 'segment', null, 'equal', [['identifier' => 'user-us-free', 'type' => 'user']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC2())->single('seg-eq')->asBool());
+    }
+
+    /** Segment rule targets type=organization; context is type=user — must NOT match. */
+    public function testSegmentRuleTypeStrictnessUserContextFails(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-type', false, [
+            $this->ruleFor(1, 'segment', null, 'equal', [['identifier' => 'shared-123', 'type' => 'organization']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC5())->single('seg-type')->asBool());
+    }
+
+    /** Segment rule targets type=organization; context is type=organization — must match. */
+    public function testSegmentRuleTypeStrictnessOrgContextMatches(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-type', false, [
+            $this->ruleFor(1, 'segment', null, 'equal', [['identifier' => 'shared-123', 'type' => 'organization']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC6())->single('seg-type')->asBool());
+    }
+
+    // =========================================================================
+    // Attribute rule evaluation — list, string operators
+    // =========================================================================
+
+    public function testAttributeInListMatchesWhenValueInList(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-in', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'in', [['identifier' => 'pro'], ['identifier' => 'enterprise']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('attr-in')->asBool()); // plan=pro
+    }
+
+    public function testAttributeInListReturnsFalseWhenValueNotInList(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-in', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'in', [['identifier' => 'pro'], ['identifier' => 'enterprise']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('attr-in')->asBool()); // plan=free
+    }
+
+    public function testAttributeContainsMatchesWhenValueContained(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-contains', false, [
+            $this->ruleFor(1, 'attribute', 'tags', 'contains', [['identifier' => 'beta']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC1())->single('attr-contains')->asBool()); // tags=[alpha,beta]
+    }
+
+    public function testAttributeEndsWithMatchesWhenSuffixPresent(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-ends', false, [
+            $this->ruleFor(1, 'attribute', 'email', 'ends_with', [['identifier' => '@acme.com']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC1())->single('attr-ends')->asBool()); // alice@acme.com
+    }
+
+    public function testAttributeEndsWithReturnsFalseWhenSuffixAbsent(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-ends', false, [
+            $this->ruleFor(1, 'attribute', 'email', 'ends_with', [['identifier' => '@acme.com']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC2())->single('attr-ends')->asBool()); // bob@acme.ca
+    }
+
+    // =========================================================================
+    // Attribute rule evaluation — numeric operators
+    // =========================================================================
+
+    public function testNumericGteMatchesWhenAboveThreshold(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-gte', false, [
+            $this->ruleFor(1, 'attribute', 'tier', 'gte', [['identifier' => '2']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('attr-gte')->asBool()); // tier=3
+    }
+
+    public function testNumericGteReturnsFalseWhenBelowThreshold(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-gte', false, [
+            $this->ruleFor(1, 'attribute', 'tier', 'gte', [['identifier' => '2']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('attr-gte')->asBool()); // tier=1
+    }
+
+    public function testNumericGtReturnsTrueWhenAbove(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-gt', false, [
+            $this->ruleFor(1, 'attribute', 'tier', 'gt', [['identifier' => '1']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('attr-gt')->asBool()); // tier=3
+    }
+
+    public function testNumericGtReturnsFalseWhenEqual(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-gt', false, [
+            $this->ruleFor(1, 'attribute', 'tier', 'gt', [['identifier' => '1']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('attr-gt')->asBool()); // tier=1
+    }
+
+    public function testNumericLtReturnsTrueWhenBelow(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-lt', false, [
+            $this->ruleFor(1, 'attribute', 'age', 'lt', [['identifier' => '30']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC1())->single('attr-lt')->asBool()); // age=25
+    }
+
+    public function testNumericLtReturnsFalseWhenAbove(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-lt', false, [
+            $this->ruleFor(1, 'attribute', 'age', 'lt', [['identifier' => '30']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC2())->single('attr-lt')->asBool()); // age=42
+    }
+
+    public function testNumericLteReturnsTrueWhenAtThreshold(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('attr-lte', false, [
+            $this->ruleFor(1, 'attribute', 'age', 'lte', [['identifier' => '42']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('attr-lte')->asBool()); // age=42
+    }
+
+    // =========================================================================
+    // Rule ordering — first match wins
+    // =========================================================================
+
+    /**
+     * C1 satisfies both country=US (rule 1) and plan=free (rule 2).
+     * Rule evaluation is ordered by position, so rule 1 must win.
+     */
+    public function testFirstMatchingRuleWins(): void
+    {
+        $this->cacheWith([$this->stringFlagArray('first-match', 'fallback', [
+            $this->ruleFor(1, 'attribute', 'country', 'equal', [['identifier' => 'US']], 'us-first', 'string'),
+            $this->ruleFor(2, 'attribute', 'plan', 'equal', [['identifier' => 'free']], 'free-second', 'string'),
+        ])]);
+
+        $this->assertSame('us-first', $this->createManager()->withContext($this->parityC1())->single('first-match')->asString());
+    }
+
+    /**
+     * C1 (country=US) → rule 1 → treatment-us.
+     * C2 (plan=pro, country=CA) → rule 2 → treatment-pro.
+     */
+    public function testVariantFlagSelectsRuleByContext(): void
+    {
+        $this->cacheWith([$this->stringFlagArray('variant', 'control', [
+            $this->ruleFor(1, 'attribute', 'country', 'equal', [['identifier' => 'US']], 'treatment-us', 'string'),
+            $this->ruleFor(2, 'attribute', 'plan', 'equal', [['identifier' => 'pro']], 'treatment-pro', 'string'),
+        ])]);
+
+        $manager = $this->createManager();
+
+        $this->assertSame('treatment-us', $manager->withContext($this->parityC1())->single('variant')->asString());
+        $this->assertSame('treatment-pro', $manager->withContext($this->parityC2())->single('variant')->asString());
+    }
+
+    // =========================================================================
+    // Rollout — cross-SDK vectors (abc123 salt, 20%)
+    // =========================================================================
+
+    /** abc123 + ctx-beta → bucket 3 < 20 → in rollout → true. */
+    public function testRollout20PercentIncludesContextInBucket(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('r20', false, [], $this->parityRollout(20, self::P_SALT))]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC3())->single('r20')->asBool());
+    }
+
+    /** abc123 + ctx-alpha → bucket 54 >= 20 → not in rollout → false. */
+    public function testRollout20PercentExcludesContextOutsideBucket(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('r20', false, [], $this->parityRollout(20, self::P_SALT))]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC4())->single('r20')->asBool());
+    }
+
+    // =========================================================================
+    // Rollout — gate rules (rollout requires additional criteria)
+    // =========================================================================
+
+    /** C3 passes country=US gate AND is in 20% bucket → rollout value true. */
+    public function testGatedRolloutIncludesContextPassingGate(): void
+    {
+        $gate = $this->ruleFor(1, 'attribute', 'country', 'equal', [['identifier' => 'US']], true);
+        $this->cacheWith([$this->boolFlagArray('r20-us', false, [], $this->parityRollout(20, self::P_SALT, [$gate]))]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC3())->single('r20-us')->asBool());
+    }
+
+    /** C2 (country=CA) fails country=US gate → base value false, regardless of bucket. */
+    public function testGatedRolloutExcludesContextFailingGate(): void
+    {
+        $gate = $this->ruleFor(1, 'attribute', 'country', 'equal', [['identifier' => 'US']], true);
+        $this->cacheWith([$this->boolFlagArray('r20-us', false, [], $this->parityRollout(20, self::P_SALT, [$gate]))]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC2())->single('r20-us')->asBool());
+    }
+
+    /** 1% rollout with a gate (country=ZZ) that never matches — effectively off. */
+    public function testEffectivelyZeroRolloutViaNeverMatchingGate(): void
+    {
+        $gate = $this->ruleFor(1, 'attribute', 'country', 'equal', [['identifier' => 'ZZ']], true);
+        $this->cacheWith([$this->boolFlagArray('r1-zz', false, [], $this->parityRollout(1, self::P_SALT, [$gate]))]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('r1-zz')->asBool());
+    }
+
+    // =========================================================================
+    // Cache — refreshRules flips evaluated value
+    // =========================================================================
+
+    public function testRefreshRulesFlipsEvaluatedValue(): void
+    {
+        $stalePayload = json_encode([
+            'version' => 'v1',
+            'flags' => [$this->boolFlagArray('cache-flip', false)],
+        ]);
+        $freshResponse = RulesResponse::fromArray([
+            'version' => 'v1',
+            'flags' => [$this->boolFlagArray('cache-flip', true)],
+        ]);
+
+        $this->cache->shouldReceive('get')->with('zenmanage_rules')->once()->andReturn($stalePayload);
+        $this->apiClient->shouldReceive('getRules')->once()->andReturn($freshResponse);
+        $this->cache->shouldReceive('set')->once();
+
+        $manager = $this->createManager();
+
+        $this->assertFalse($manager->single('cache-flip')->asBool(), 'Initial: stale cache value');
+        $this->assertFalse($manager->single('cache-flip')->asBool(), 'Before refresh: still stale in-memory');
+
+        $manager->refreshRules();
+
+        $this->assertTrue($manager->single('cache-flip')->asBool(), 'After refresh: new API value');
+    }
+
+    // =========================================================================
+    // Negated operators through full evaluation pipeline
+    // =========================================================================
+
+    /** notequal free: C1 plan=free — rule does NOT fire — base false. */
+    public function testNegatedAttributeEqualsReturnsFalseWhenMatches(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('notequal', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'notequal', [['identifier' => 'free']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('notequal')->asBool()); // plan=free
+    }
+
+    /** notequal free: C2 plan=pro — rule fires — true. */
+    public function testNegatedAttributeEqualsReturnsTrueWhenNotMatches(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('notequal', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'notequal', [['identifier' => 'free']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('notequal')->asBool()); // plan=pro
+    }
+
+    /** notcontains alpha: C1 tags=[alpha,beta] — alpha present — rule does NOT fire — false. */
+    public function testAttributeNotContainsReturnsFalseWhenPresent(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('notcontains', false, [
+            $this->ruleFor(1, 'attribute', 'tags', 'notcontains', [['identifier' => 'alpha']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('notcontains')->asBool());
+    }
+
+    /** notcontains alpha: C2 tags=[beta,gamma] — alpha absent — rule fires — true. */
+    public function testAttributeNotContainsReturnsTrueWhenAbsent(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('notcontains', false, [
+            $this->ruleFor(1, 'attribute', 'tags', 'notcontains', [['identifier' => 'alpha']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('notcontains')->asBool());
+    }
+
+    /** not_in [free,trial]: C1 plan=free IS in list — rule does NOT fire — false. */
+    public function testAttributeNotInReturnsFalseWhenInList(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('not-in', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'not_in', [['identifier' => 'free'], ['identifier' => 'trial']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('not-in')->asBool()); // plan=free
+    }
+
+    /** not_in [free,trial]: C2 plan=pro NOT in list — rule fires — true. */
+    public function testAttributeNotInReturnsTrueWhenNotInList(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('not-in', false, [
+            $this->ruleFor(1, 'attribute', 'plan', 'not_in', [['identifier' => 'free'], ['identifier' => 'trial']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC2())->single('not-in')->asBool()); // plan=pro
+    }
+
+    /** starts_with admin: C1 email=alice@acme.com — prefix absent — false. */
+    public function testAttributeStartsWithReturnsFalseWhenPrefixAbsent(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('starts-with', false, [
+            $this->ruleFor(1, 'attribute', 'email', 'starts_with', [['identifier' => 'admin']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC1())->single('starts-with')->asBool());
+    }
+
+    // =========================================================================
+    // Negated segment (context) operator
+    // =========================================================================
+
+    /** notequal user-ca-pro: C1 identifier=user-us-free — different — rule fires — true. */
+    public function testSegmentNotEqualsReturnsTrueWhenDifferentIdentifier(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-neq', false, [
+            $this->ruleFor(1, 'segment', null, 'notequal', [['identifier' => 'user-ca-pro', 'type' => 'user']], true),
+        ])]);
+
+        $this->assertTrue($this->createManager()->withContext($this->parityC1())->single('seg-neq')->asBool());
+    }
+
+    /** notequal user-ca-pro: C2 identifier=user-ca-pro — same — rule does NOT fire — false. */
+    public function testSegmentNotEqualsReturnsFalseWhenSameIdentifier(): void
+    {
+        $this->cacheWith([$this->boolFlagArray('seg-neq', false, [
+            $this->ruleFor(1, 'segment', null, 'notequal', [['identifier' => 'user-ca-pro', 'type' => 'user']], true),
+        ])]);
+
+        $this->assertFalse($this->createManager()->withContext($this->parityC2())->single('seg-neq')->asBool());
     }
 }

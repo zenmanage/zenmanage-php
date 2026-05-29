@@ -165,4 +165,16 @@ final class FlagManagerTest extends TestCase
         $this->assertCount(1, $flags);
         $this->assertTrue($flags[0]->asBool());
     }
+
+    public function testReportUsageCanBeCalledDirectlyWithoutContext(): void
+    {
+        $this->expectNever($this->cache, 'get');
+        $this->apiClient->shouldNotReceive('getRules');
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('some-flag', null);
+
+        $this->createManager()->reportUsage('some-flag', null);
+
+        // Assertion is enforced by Mockery expectation above (verified in tearDown)
+        $this->addToAssertionCount(1);
+    }
 }
