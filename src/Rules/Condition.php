@@ -52,12 +52,12 @@ final class Condition implements JsonSerializable
     {
         $values = [];
 
-        if (isset($data['values']) && is_array($data['values'])) {
+        if (isset($data['values']) === true && is_array($data['values']) === true) {
             foreach ($data['values'] as $valueData) {
                 // Handle both object format (segment/context) and string format (attribute)
-                if (is_array($valueData)) {
+                if (is_array($valueData) === true) {
                     $values[] = ConditionValue::fromArray($valueData);
-                } elseif (is_string($valueData)) {
+                } elseif (is_string($valueData) === true) {
                     // For attribute selector, values are plain strings
                     // Convert to ConditionValue format with empty type
                     $values[] = new ConditionValue($valueData, '');

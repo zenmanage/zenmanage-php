@@ -13,11 +13,11 @@ final class ContainsOperator implements OperatorInterface
 
     public function evaluate(mixed $actual, mixed $expected): bool
     {
-        if (is_string($actual) && is_string($expected)) {
+        if (is_string($actual) === true && is_string($expected) === true) {
             return str_contains($actual, $expected);
         }
 
-        if (is_array($actual)) {
+        if (is_array($actual) === true) {
             return in_array($expected, $actual, true);
         }
 

@@ -72,12 +72,12 @@ final class ApiClient implements ApiClientInterface
             return $sdkVersion;
         }
 
-        if (class_exists(\Composer\InstalledVersions::class)) {
+        if (class_exists(\Composer\InstalledVersions::class) === true) {
             try {
-                if (\Composer\InstalledVersions::isInstalled('zenmanage/zenmanage-php')) {
+                if (\Composer\InstalledVersions::isInstalled('zenmanage/zenmanage-php') === true) {
                     $version = \Composer\InstalledVersions::getPrettyVersion('zenmanage/zenmanage-php');
 
-                    if (is_string($version) && $version !== '') {
+                    if (is_string($version) === true && $version !== '') {
                         return $version;
                     }
                 }
@@ -128,7 +128,7 @@ final class ApiClient implements ApiClientInterface
 
                 // Build headers with optional context
                 $headers = [];
-                if ($context !== null && $this->shouldSendContext($context)) {
+                if ($context !== null && $this->shouldSendContext($context) === true) {
                     $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
                 }
 

@@ -62,7 +62,7 @@ final class Rollout implements JsonSerializable
     {
         $rules = [];
 
-        if (isset($data['rules']) && is_array($data['rules'])) {
+        if (isset($data['rules']) === true && is_array($data['rules']) === true) {
             foreach ($data['rules'] as $ruleData) {
                 $rules[] = Rule::fromArray($ruleData);
             }

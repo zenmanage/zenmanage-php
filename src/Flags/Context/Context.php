@@ -45,7 +45,7 @@ final class Context implements JsonSerializable
         $attributes = [];
 
         // Process attributes array if present
-        if (isset($data['attributes']) && is_array($data['attributes'])) {
+        if (isset($data['attributes']) === true && is_array($data['attributes']) === true) {
             foreach ($data['attributes'] as $attrData) {
                 if (is_array($attrData) === false) {
                     continue;
@@ -57,11 +57,11 @@ final class Context implements JsonSerializable
                 }
 
                 $values = [];
-                if (isset($attrData['values']) && is_array($attrData['values'])) {
+                if (isset($attrData['values']) === true && is_array($attrData['values']) === true) {
                     foreach ($attrData['values'] as $valueData) {
-                        if (is_array($valueData) && isset($valueData['value'])) {
+                        if (is_array($valueData) === true && isset($valueData['value']) === true) {
                             $values[] = (string) $valueData['value'];
-                        } elseif (is_string($valueData)) {
+                        } elseif (is_string($valueData) === true) {
                             $values[] = $valueData;
                         }
                     }

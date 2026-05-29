@@ -75,7 +75,7 @@ final class Flag implements JsonSerializable
 
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) && isset($value['boolean'])) {
+        if (is_array($value) === true && isset($value['boolean']) === true) {
             return (bool) $value['boolean'];
         }
 
@@ -89,7 +89,7 @@ final class Flag implements JsonSerializable
     {
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) && isset($value['boolean'])) {
+        if (is_array($value) === true && isset($value['boolean']) === true) {
             return (bool) $value['boolean'];
         }
 
@@ -103,15 +103,15 @@ final class Flag implements JsonSerializable
     {
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) && isset($value['string'])) {
+        if (is_array($value) === true && isset($value['string']) === true) {
             return (string) $value['string'];
         }
 
-        if (is_string($value)) {
+        if (is_string($value) === true) {
             return $value;
         }
 
-        if (is_scalar($value)) {
+        if (is_scalar($value) === true) {
             return (string) $value;
         }
 
@@ -125,11 +125,11 @@ final class Flag implements JsonSerializable
     {
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) && isset($value['number'])) {
+        if (is_array($value) === true && isset($value['number']) === true) {
             return $value['number'];
         }
 
-        if (is_numeric($value)) {
+        if (is_numeric($value) === true) {
             return $value + 0;
         }
 
@@ -151,7 +151,7 @@ final class Flag implements JsonSerializable
     {
         $rules = [];
 
-        if (isset($data['rules']) && is_array($data['rules'])) {
+        if (isset($data['rules']) === true && is_array($data['rules']) === true) {
             foreach ($data['rules'] as $ruleData) {
                 $rules[] = Rule::fromArray($ruleData);
             }
@@ -163,7 +163,7 @@ final class Flag implements JsonSerializable
         $name = isset($data['name']) && is_string($data['name']) ? $data['name'] : '';
 
         $rollout = null;
-        if (isset($data['rollout']) && is_array($data['rollout'])) {
+        if (isset($data['rollout']) === true && is_array($data['rollout']) === true) {
             $rollout = Rollout::fromArray($data['rollout']);
         }
 

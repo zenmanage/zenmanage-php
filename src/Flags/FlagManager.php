@@ -140,7 +140,7 @@ final class FlagManager implements FlagManagerInterface
             try {
                 $data = json_decode($cached, true);
 
-                if (is_array($data)) {
+                if (is_array($data) === true) {
                     $this->flags = $this->parseFlags($data);
 
                     return;
@@ -191,7 +191,7 @@ final class FlagManager implements FlagManagerInterface
     {
         $flags = [];
 
-        if (isset($data['flags']) && is_array($data['flags'])) {
+        if (isset($data['flags']) === true && is_array($data['flags']) === true) {
             foreach ($data['flags'] as $flagData) {
                 try {
                     $flags[] = Flag::fromArray($flagData);
@@ -270,7 +270,7 @@ final class FlagManager implements FlagManagerInterface
                 $rollout->getPercentage(),
             );
 
-            if ($inBucket) {
+            if ($inBucket === true) {
                 // Context is in the rollout bucket — use rollout target & rules
                 $target = $rollout->getTarget();
                 $rules = $rollout->getRules();

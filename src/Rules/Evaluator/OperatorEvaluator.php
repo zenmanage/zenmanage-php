@@ -87,10 +87,10 @@ final class OperatorEvaluator
         $op = str_replace(['-', ' '], '', $op);
 
         $negate = false;
-        if (str_starts_with($op, 'not_')) {
+        if (str_starts_with($op, 'not_') === true) {
             $negate = true;
             $op = substr($op, 4);
-        } elseif (str_starts_with($op, 'not')) {
+        } elseif (str_starts_with($op, 'not') === true) {
             $negate = true;
             $op = substr($op, 3);
         }

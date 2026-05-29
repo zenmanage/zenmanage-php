@@ -13,7 +13,7 @@ final class InOperator implements OperatorInterface
 
     public function evaluate(mixed $actual, mixed $expected): bool
     {
-        if (is_array($expected)) {
+        if (is_array($expected) === true) {
             return in_array($actual, $expected, true);
         }
 

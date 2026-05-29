@@ -43,7 +43,7 @@ final class SegmentConditionEvaluator implements ConditionEvaluatorInterface
                 $conditionValue->getIdentifier()
             );
 
-            if ($result) {
+            if ($result === true) {
                 return true;
             }
         }

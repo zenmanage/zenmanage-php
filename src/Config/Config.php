@@ -73,15 +73,15 @@ final class Config
 
     private function validate(): void
     {
-        if (empty($this->environmentToken)) {
+        if (empty($this->environmentToken) === true) {
             throw new ConfigurationException('Environment token is required');
         }
 
-        if (str_starts_with($this->environmentToken, self::CLIENT_KEY_PREFIX)) {
+        if (str_starts_with($this->environmentToken, self::CLIENT_KEY_PREFIX) === true) {
             throw new ConfigurationException('Unsupported key type for PHP SDK: client key provided (cli_). Use a server key (srv_).');
         }
 
-        if (str_starts_with($this->environmentToken, self::MOBILE_KEY_PREFIX)) {
+        if (str_starts_with($this->environmentToken, self::MOBILE_KEY_PREFIX) === true) {
             throw new ConfigurationException('Unsupported key type for PHP SDK: mobile key provided (mob_). Use a server key (srv_).');
         }
 
@@ -97,7 +97,7 @@ final class Config
             throw new ConfigurationException('Invalid cache backend: ' . $this->cacheBackend);
         }
 
-        if ($this->cacheBackend === 'filesystem' && empty($this->cacheDirectory)) {
+        if ($this->cacheBackend === 'filesystem' && empty($this->cacheDirectory) === true) {
             throw new ConfigurationException('Cache directory is required for filesystem cache backend');
         }
 

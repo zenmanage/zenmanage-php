@@ -35,7 +35,7 @@ final class ConditionValue implements JsonSerializable
         $identifier = isset($data['identifier']) && is_string($data['identifier']) ? $data['identifier'] : '';
         $type = null;
 
-        if (array_key_exists('type', $data)) {
+        if (array_key_exists('type', $data) === true) {
             $type = is_string($data['type']) ? $data['type'] : null;
         }
 

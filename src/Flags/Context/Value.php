@@ -23,19 +23,19 @@ final class Value implements JsonSerializable
 
     public function asString(): string
     {
-        if (is_string($this->value)) {
+        if (is_string($this->value) === true) {
             return $this->value;
         }
 
-        if (is_numeric($this->value)) {
+        if (is_numeric($this->value) === true) {
             return (string) $this->value;
         }
 
-        if (is_bool($this->value)) {
+        if (is_bool($this->value) === true) {
             return $this->value ? 'true' : 'false';
         }
 
-        if (is_array($this->value)) {
+        if (is_array($this->value) === true) {
             return json_encode($this->value) ?: '';
         }
 
@@ -44,7 +44,7 @@ final class Value implements JsonSerializable
 
     public function asNumber(): int|float
     {
-        if (is_numeric($this->value)) {
+        if (is_numeric($this->value) === true) {
             return $this->value + 0; // Convert to appropriate numeric type
         }
 
@@ -53,11 +53,11 @@ final class Value implements JsonSerializable
 
     public function asBool(): bool
     {
-        if (is_bool($this->value)) {
+        if (is_bool($this->value) === true) {
             return $this->value;
         }
 
-        if (is_string($this->value)) {
+        if (is_string($this->value) === true) {
             return in_array(strtolower($this->value), ['true', '1', 'yes', 'on'], true);
         }
 
@@ -69,7 +69,7 @@ final class Value implements JsonSerializable
      */
     public function asArray(): array
     {
-        if (is_array($this->value)) {
+        if (is_array($this->value) === true) {
             return $this->value;
         }
 

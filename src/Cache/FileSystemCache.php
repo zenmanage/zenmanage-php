@@ -81,7 +81,7 @@ final class FileSystemCache implements CacheInterface
     {
         $filePath = $this->getFilePath($key);
 
-        if (file_exists($filePath)) {
+        if (file_exists($filePath) === true) {
             @unlink($filePath);
         }
     }

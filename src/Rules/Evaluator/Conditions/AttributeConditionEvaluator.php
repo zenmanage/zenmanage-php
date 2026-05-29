@@ -78,7 +78,7 @@ final class AttributeConditionEvaluator implements ConditionEvaluatorInterface
                     $expectedValue
                 );
 
-                if ($result) {
+                if ($result === true) {
                     return true;
                 }
             }
