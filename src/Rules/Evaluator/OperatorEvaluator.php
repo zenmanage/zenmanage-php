@@ -61,7 +61,7 @@ final class OperatorEvaluator
 
         $result = $impl->evaluate($actual, $expected);
 
-        return $negate ? !$result : $result;
+        return $negate ? $result === false : $result;
     }
 
     private function findOperator(string $operator): ?OperatorInterface

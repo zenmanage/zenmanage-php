@@ -85,7 +85,7 @@ final class Config
             throw new ConfigurationException('Unsupported key type for PHP SDK: mobile key provided (mob_). Use a server key (srv_).');
         }
 
-        if (!str_starts_with($this->environmentToken, self::SERVER_KEY_PREFIX)) {
+        if (str_starts_with($this->environmentToken, self::SERVER_KEY_PREFIX) === false) {
             throw new ConfigurationException('Invalid environment token for PHP SDK. Expected a case-sensitive server key prefixed with srv_.');
         }
 
@@ -93,7 +93,7 @@ final class Config
             throw new ConfigurationException('Cache TTL must be non-negative');
         }
 
-        if (!in_array($this->cacheBackend, ['memory', 'filesystem', 'null'], true)) {
+        if (in_array($this->cacheBackend, ['memory', 'filesystem', 'null'], true) === false) {
             throw new ConfigurationException('Invalid cache backend: ' . $this->cacheBackend);
         }
 

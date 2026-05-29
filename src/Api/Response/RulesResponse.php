@@ -55,11 +55,11 @@ final class RulesResponse
      */
     public static function fromArray(array $data): self
     {
-        if (!isset($data['version'])) {
+        if (isset($data['version']) === false) {
             throw new InvalidRulesException('Rules response missing "version" field');
         }
 
-        if (!isset($data['flags']) || !is_array($data['flags'])) {
+        if (isset($data['flags']) === false || is_array($data['flags']) === false) {
             throw new InvalidRulesException('Rules response missing or invalid "flags" field');
         }
 
@@ -76,7 +76,7 @@ final class RulesResponse
         }
 
         $version = $data['version'];
-        if (!is_string($version)) {
+        if (is_string($version) === false) {
             $version = '';
         }
 

@@ -23,7 +23,7 @@ final class FileSystemCache implements CacheInterface
     {
         $filePath = $this->getFilePath($key);
 
-        if (!file_exists($filePath)) {
+        if (file_exists($filePath) === false) {
             return null;
         }
 
@@ -35,7 +35,7 @@ final class FileSystemCache implements CacheInterface
 
         $data = @json_decode($content, true);
 
-        if (!is_array($data) || !isset($data['value'], $data['expires'])) {
+        if (is_array($data) === false || isset($data['value'], $data['expires']) === false) {
             return null;
         }
 
@@ -108,15 +108,15 @@ final class FileSystemCache implements CacheInterface
 
     private function ensureDirectoryExists(): void
     {
-        if (!is_dir($this->cacheDirectory)) {
+        if (is_dir($this->cacheDirectory) === false) {
             $result = @mkdir($this->cacheDirectory, 0755, true);
 
-            if (!$result) {
+            if ($result === false) {
                 throw new CacheException("Failed to create cache directory: {$this->cacheDirectory}");
             }
         }
 
-        if (!is_writable($this->cacheDirectory)) {
+        if (is_writable($this->cacheDirectory) === false) {
             throw new CacheException("Cache directory is not writable: {$this->cacheDirectory}");
         }
     }

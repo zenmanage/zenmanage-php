@@ -139,7 +139,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
-                return !isset($args['headers']['X-ZENMANAGE-CONTEXT']);
+                return isset($args['headers']['X-ZENMANAGE-CONTEXT']) === false;
             })
         )->andReturn(new Response(200));
 

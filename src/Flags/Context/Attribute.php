@@ -39,7 +39,7 @@ final class Attribute implements JsonSerializable
             return false;
         }
 
-        if ($value !== null && !in_array($value, $this->values, true)) {
+        if ($value !== null && in_array($value, $this->values, true) === false) {
             return false;
         }
 

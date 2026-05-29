@@ -109,7 +109,7 @@ final class ApiClient implements ApiClientInterface
 
     public function reportUsage(string $flagKey, ?Context $context = null): void
     {
-        if (!$this->enableUsageReporting) {
+        if ($this->enableUsageReporting === false) {
             $this->logger->debug('Usage reporting disabled, skipping API call', [
                 'key' => $flagKey,
             ]);
@@ -166,12 +166,12 @@ final class ApiClient implements ApiClientInterface
 
     private function shouldSendContext(Context $context): bool
     {
-        return !(
+        return (
             $context->getType() === 'anonymous'
             && $context->getName() === null
             && $context->getIdentifier() === null
             && $context->getAttributes() === []
-        );
+        ) === false;
     }
 
     /**
@@ -198,7 +198,7 @@ final class ApiClient implements ApiClientInterface
 
         $data = json_decode($rulesBody, true);
 
-        if (!is_array($data)) {
+        if (is_array($data) === false) {
             throw new InvalidRulesException('Rules JSON is not valid');
         }
 
@@ -215,18 +215,18 @@ final class ApiClient implements ApiClientInterface
 
         $metadata = json_decode($body, true);
 
-        if (!is_array($metadata)) {
+        if (is_array($metadata) === false) {
             throw new InvalidRulesException('API response is not valid JSON');
         }
 
-        if (!isset($metadata['data']['cdn'], $metadata['data']['path'])) {
+        if (isset($metadata['data']['cdn'], $metadata['data']['path']) === false) {
             throw new InvalidRulesException('API response missing cdn or path fields');
         }
 
         $cdn = $metadata['data']['cdn'];
         $path = $metadata['data']['path'];
 
-        if (!is_string($cdn) || !is_string($path)) {
+        if (is_string($cdn) === false || is_string($path) === false) {
             throw new InvalidRulesException('cdn or path fields are not strings');
         }
 

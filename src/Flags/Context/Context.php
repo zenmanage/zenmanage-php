@@ -47,12 +47,12 @@ final class Context implements JsonSerializable
         // Process attributes array if present
         if (isset($data['attributes']) && is_array($data['attributes'])) {
             foreach ($data['attributes'] as $attrData) {
-                if (!is_array($attrData)) {
+                if (is_array($attrData) === false) {
                     continue;
                 }
 
                 $key = $attrData['key'] ?? null;
-                if (!is_string($key)) {
+                if (is_string($key) === false) {
                     continue;
                 }
 
@@ -67,7 +67,7 @@ final class Context implements JsonSerializable
                     }
                 }
 
-                if (!empty($values)) {
+                if (empty($values) === false) {
                     $attributes[] = new Attribute($key, $values);
                 }
             }
@@ -153,7 +153,7 @@ final class Context implements JsonSerializable
             $result['identifier'] = $this->identifier;
         }
 
-        if (!empty($this->attributes)) {
+        if (empty($this->attributes) === false) {
             $result['attributes'] = array_values(array_map(
                 fn (Attribute $attr) => $attr->jsonSerialize(),
                 $this->attributes

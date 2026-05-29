@@ -13,7 +13,7 @@ final class LessThanOrEqualOperator implements OperatorInterface
 
     public function evaluate(mixed $actual, mixed $expected): bool
     {
-        if (!is_numeric($actual) || !is_numeric($expected)) {
+        if (is_numeric($actual) === false || is_numeric($expected) === false) {
             return false;
         }
 

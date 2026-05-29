@@ -13,7 +13,7 @@ final class StartsWithOperator implements OperatorInterface
 
     public function evaluate(mixed $actual, mixed $expected): bool
     {
-        if (!is_string($actual) || !is_string($expected)) {
+        if (is_string($actual) === false || is_string($expected) === false) {
             return false;
         }
 

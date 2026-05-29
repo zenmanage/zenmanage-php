@@ -14,7 +14,7 @@ final class InMemoryCache implements CacheInterface
 
     public function get(string $key): ?string
     {
-        if (!isset($this->storage[$key])) {
+        if (isset($this->storage[$key]) === false) {
             return null;
         }
 
