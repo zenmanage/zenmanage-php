@@ -743,10 +743,10 @@ final class FlagManagerRolloutTest extends TestCase
     //   salt=abc123, identifier=ctx-beta  → bucket 3  → IN  20% rollout
     //   salt=abc123, identifier=ctx-alpha → bucket 54 → NOT in 20% rollout
     private const P_SALT = 'abc123';
-    private const P_C3   = 'ctx-beta';   // bucket 3  → IN
-    private const P_C4   = 'ctx-alpha';  // bucket 54 → NOT in
+    private const P_C3 = 'ctx-beta';   // bucket 3  → IN
+    private const P_C4 = 'ctx-alpha';  // bucket 54 → NOT in
 
-    /** 
+    /**
      * @param array<int, array<string, mixed>> $rules
      * @param array<string, mixed>|null $rollout
      * @return array<string, mixed>
