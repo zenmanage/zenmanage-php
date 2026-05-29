@@ -77,10 +77,17 @@ final class FlagManagerTest extends TestCase
 
     private function createManager(): FlagManager
     {
+        /** @var \Zenmanage\Api\ApiClientInterface $apiClient */
+        $apiClient = $this->apiClient;
+        /** @var \Zenmanage\Cache\CacheInterface $cache */
+        $cache = $this->cache;
+        /** @var \Zenmanage\Rules\RuleEngineInterface $ruleEngine */
+        $ruleEngine = $this->ruleEngine;
+
         return new FlagManager(
-            apiClient: $this->apiClient,
-            cache: $this->cache,
-            ruleEngine: $this->ruleEngine,
+            apiClient: $apiClient,
+            cache: $cache,
+            ruleEngine: $ruleEngine,
             cacheTtl: 3600,
             logger: new NullLogger(),
         );

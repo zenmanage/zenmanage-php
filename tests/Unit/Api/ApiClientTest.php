@@ -24,11 +24,14 @@ final class ApiClientTest extends TestCase
 
     private function makeClient(Mockery\MockInterface $httpClient): ApiClient
     {
+        /** @var \GuzzleHttp\Client $httpClientTyped */
+        $httpClientTyped = $httpClient;
+
         return new ApiClient(
             environmentToken: 'env-token',
             apiEndpoint: 'https://api.example.com',
             logger: new NullLogger(),
-            httpClient: $httpClient,
+            httpClient: $httpClientTyped,
         );
     }
 

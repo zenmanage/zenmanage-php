@@ -59,16 +59,22 @@ final class FlagManagerRolloutTest extends TestCase
             'flags' => $flagArrays,
         ]);
 
-        $this->cache->shouldReceive('get')
-            ->with('zenmanage_rules')
+        /** @var \Mockery\Expectation $cacheGet */
+        $cacheGet = $this->cache->shouldReceive('get');
+        $cacheGet->with('zenmanage_rules')
             ->andReturn($payload);
     }
 
     private function createManager(): FlagManager
     {
+        /** @var \Zenmanage\Api\ApiClientInterface $apiClient */
+        $apiClient = $this->apiClient;
+        /** @var \Zenmanage\Cache\CacheInterface $cache */
+        $cache = $this->cache;
+
         return new FlagManager(
-            apiClient: $this->apiClient,
-            cache: $this->cache,
+            apiClient: $apiClient,
+            cache: $cache,
             ruleEngine: $this->ruleEngine,
             cacheTtl: 3600,
             logger: new NullLogger(),
@@ -740,7 +746,11 @@ final class FlagManagerRolloutTest extends TestCase
     private const P_C3   = 'ctx-beta';   // bucket 3  → IN
     private const P_C4   = 'ctx-alpha';  // bucket 54 → NOT in
 
-    /** @return array<string, mixed> */
+    /** 
+     * @param array<int, array<string, mixed>> $rules
+     * @param array<string, mixed>|null $rollout
+     * @return array<string, mixed>
+     */
     private function boolFlagArray(string $key, bool $base, array $rules = [], ?array $rollout = null): array
     {
         $flag = [
@@ -765,7 +775,10 @@ final class FlagManagerRolloutTest extends TestCase
         return $flag;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param array<int, array<string, mixed>> $rules
+     * @return array<string, mixed>
+     */
     private function stringFlagArray(string $key, string $base, array $rules = []): array
     {
         return [
@@ -1188,9 +1201,15 @@ final class FlagManagerRolloutTest extends TestCase
             'flags' => [$this->boolFlagArray('cache-flip', true)],
         ]);
 
-        $this->cache->shouldReceive('get')->with('zenmanage_rules')->once()->andReturn($stalePayload);
-        $this->apiClient->shouldReceive('getRules')->once()->andReturn($freshResponse);
-        $this->cache->shouldReceive('set')->once();
+        /** @var \Mockery\Expectation $cacheGet2 */
+        $cacheGet2 = $this->cache->shouldReceive('get');
+        $cacheGet2->with('zenmanage_rules')->once()->andReturn($stalePayload);
+        /** @var \Mockery\Expectation $apiGetRules */
+        $apiGetRules = $this->apiClient->shouldReceive('getRules');
+        $apiGetRules->once()->andReturn($freshResponse);
+        /** @var \Mockery\Expectation $cacheSet */
+        $cacheSet = $this->cache->shouldReceive('set');
+        $cacheSet->once();
 
         $manager = $this->createManager();
 

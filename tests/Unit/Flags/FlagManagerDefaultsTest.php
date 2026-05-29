@@ -29,11 +29,11 @@ final class FlagManagerDefaultsTest extends TestCase
         $this->ruleEngine = Mockery::mock(RuleEngineInterface::class);
 
         // Mock cache miss and empty API response
-        $this->cache->shouldReceive('get')->andReturn(null);
-        $this->apiClient->shouldReceive('getRules')->andReturn(
+        $this->expectReceive($this->cache, 'get')->andReturn(null);
+        $this->expectReceive($this->apiClient, 'getRules')->andReturn(
             new RulesResponse(version: '1.0.0', flags: [])
         );
-        $this->cache->shouldReceive('set')->andReturn(true);
+        $this->expectReceive($this->cache, 'set')->andReturn(true);
     }
 
     protected function tearDown(): void
@@ -41,12 +41,30 @@ final class FlagManagerDefaultsTest extends TestCase
         Mockery::close();
     }
 
+    /**
+     * @return \Mockery\Expectation
+     */
+    private function expectReceive(\Mockery\MockInterface $mock, string $method)
+    {
+        /** @var \Mockery\Expectation $expectation */
+        $expectation = $mock->shouldReceive($method);
+
+        return $expectation;
+    }
+
     private function createFlagManager(): FlagManager
     {
+        /** @var \Zenmanage\Api\ApiClientInterface $apiClient */
+        $apiClient = $this->apiClient;
+        /** @var \Zenmanage\Cache\CacheInterface $cache */
+        $cache = $this->cache;
+        /** @var \Zenmanage\Rules\RuleEngineInterface $ruleEngine */
+        $ruleEngine = $this->ruleEngine;
+
         return new FlagManager(
-            apiClient: $this->apiClient,
-            cache: $this->cache,
-            ruleEngine: $this->ruleEngine,
+            apiClient: $apiClient,
+            cache: $cache,
+            ruleEngine: $ruleEngine,
             cacheTtl: 3600,
             logger: new NullLogger()
         );
@@ -54,7 +72,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithInlineDefault(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('non-existent-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('non-existent-flag', null)->andReturnNull();
 
         $manager = $this->createFlagManager();
 
@@ -68,7 +86,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleInlineDefaultTakesPriorityOverCollection(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null)->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -85,7 +103,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleFallsBackToCollectionWhenNoInlineDefault(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('test-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null)->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -102,9 +120,9 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithDifferentTypes(): void
     {
-        $this->apiClient->shouldReceive('reportUsage')->with('bool-flag', null)->andReturnNull();
-        $this->apiClient->shouldReceive('reportUsage')->with('num-flag', null)->andReturnNull();
-        $this->apiClient->shouldReceive('reportUsage')->with('str-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('bool-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('num-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('str-flag', null)->andReturnNull();
 
         $manager = $this->createFlagManager();
 
