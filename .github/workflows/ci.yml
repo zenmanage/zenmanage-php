@@ -44,4 +44,5 @@ jobs:
         run: composer analyze
 
       - name: Code style check
+        if: matrix.php-version == '8.1'
         run: composer format:check
