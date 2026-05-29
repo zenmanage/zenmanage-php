@@ -39,7 +39,7 @@ final class AttributeConditionEvaluator implements ConditionEvaluatorInterface
         // For list-based operators (in / not_in), pass all condition values as an array
         if ($this->isListOperator($comparer)) {
             $expectedArray = array_map(
-                static fn($cv) => $cv->getIdentifier(),
+                static fn ($cv) => $cv->getIdentifier(),
                 $conditionValues
             );
             foreach ($attributeValues as $attributeValue) {
