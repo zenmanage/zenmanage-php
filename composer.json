@@ -1,6 +1,6 @@
 {
     "name": "zenmanage/zenmanage-php",
-    "version": "5.0.0",
+    "version": "5.0.1",
     "description": "Official PHP SDK for Zenmanage feature flags with local evaluation",
     "type": "library",
     "license": "MIT",

@@ -132,7 +132,7 @@ final class ApiClient implements ApiClientInterface
                     $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
                 }
 
-                $this->httpClient->post("/v1/flags/{$flagKey}/usage", [
+                $this->httpClient->post('/v1/flags/' . rawurlencode($flagKey) . '/usage', [
                     'headers' => $headers,
                 ]);
 
@@ -228,6 +228,10 @@ final class ApiClient implements ApiClientInterface
 
         if (is_string($cdn) === false || is_string($path) === false) {
             throw new InvalidRulesException('cdn or path fields are not strings');
+        }
+
+        if (str_starts_with($cdn, 'https://') === false) {
+            throw new InvalidRulesException('CDN URL must use HTTPS');
         }
 
         return $cdn . $path;
