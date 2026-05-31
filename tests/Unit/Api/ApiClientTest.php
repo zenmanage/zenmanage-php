@@ -241,12 +241,11 @@ final class ApiClientTest extends TestCase
     {
         $httpClient = Mockery::mock(Client::class);
 
-        $httpClient->shouldReceive('get')
-            ->times(1)
-            ->with('/v1/flag-json')
-            ->andReturn(new Response(200, [], json_encode([
-                'data' => ['cdn' => 'http://internal-host', 'path' => '/rules.json'],
-            ]) ?: ''));
+        /** @var \Mockery\Expectation $get */
+        $get = $httpClient->shouldReceive('get');
+        $get->times(1)->with('/v1/flag-json')->andReturn(new Response(200, [], json_encode([
+            'data' => ['cdn' => 'http://internal-host', 'path' => '/rules.json'],
+        ]) ?: ''));
 
         $client = $this->makeClient($httpClient);
 
@@ -259,10 +258,9 @@ final class ApiClientTest extends TestCase
     {
         $httpClient = Mockery::mock(Client::class);
 
-        $httpClient->shouldReceive('post')
-            ->once()
-            ->with('/v1/flags/flag%2Fwith%2Fslashes/usage', Mockery::any())
-            ->andReturn(new Response(200));
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with('/v1/flags/flag%2Fwith%2Fslashes/usage', Mockery::any())->andReturn(new Response(200));
 
         $client = $this->makeClient($httpClient);
         $client->reportUsage('flag/with/slashes');
