@@ -133,7 +133,10 @@ final class ApiClient implements ApiClientInterface
                 }
 
                 if ($defaultValue !== null) {
-                    $headers['X-Default-Value'] = json_encode([$flagKey => $defaultValue]);
+                    $encodedDefaultValue = json_encode([$flagKey => $defaultValue]);
+                    if ($encodedDefaultValue !== false) {
+                        $headers['X-Default-Value'] = $encodedDefaultValue;
+                    }
                 }
 
                 $this->httpClient->post('/v1/flags/' . rawurlencode($flagKey) . '/usage', [
