@@ -107,7 +107,7 @@ final class ApiClient implements ApiClientInterface
         return $this->throwFetchRulesException($lastException);
     }
 
-    public function reportUsage(string $flagKey, ?Context $context = null): void
+    public function reportUsage(string $flagKey, ?Context $context = null, mixed $defaultValue = null): void
     {
         if ($this->enableUsageReporting === false) {
             $this->logger->debug('Usage reporting disabled, skipping API call', [
@@ -130,6 +130,10 @@ final class ApiClient implements ApiClientInterface
                 $headers = [];
                 if ($context !== null && $this->shouldSendContext($context) === true) {
                     $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
+                }
+
+                if ($defaultValue !== null) {
+                    $headers['X-Default-Value'] = json_encode([$flagKey => $defaultValue]);
                 }
 
                 $this->httpClient->post('/v1/flags/' . rawurlencode($flagKey) . '/usage', [

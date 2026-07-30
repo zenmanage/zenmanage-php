@@ -254,6 +254,66 @@ final class ApiClientTest extends TestCase
         $client->getRules();
     }
 
+    public function testReportUsageSendsDefaultValueHeader(): void
+    {
+        $httpClient = Mockery::mock(Client::class);
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with(
+            '/v1/flags/example/usage',
+            Mockery::on(function (array $args): bool {
+                $encoded = $args['headers']['X-Default-Value'] ?? '';
+                $decoded = json_decode((string) $encoded, true);
+
+                return is_array($decoded) && $decoded === ['example' => 'fallback-value'];
+            })
+        )->andReturn(new Response(200));
+
+        $client = $this->makeClient($httpClient);
+        $client->reportUsage('example', null, 'fallback-value');
+
+        $this->assertTrue(true); // avoid risky test warning
+    }
+
+    public function testReportUsageSendsNonStringDefaultValueHeader(): void
+    {
+        $httpClient = Mockery::mock(Client::class);
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with(
+            '/v1/flags/bool-flag/usage',
+            Mockery::on(function (array $args): bool {
+                $encoded = $args['headers']['X-Default-Value'] ?? '';
+                $decoded = json_decode((string) $encoded, true);
+
+                return is_array($decoded) && $decoded === ['bool-flag' => false];
+            })
+        )->andReturn(new Response(200));
+
+        $client = $this->makeClient($httpClient);
+        $client->reportUsage('bool-flag', null, false);
+
+        $this->assertTrue(true); // avoid risky test warning
+    }
+
+    public function testReportUsageDoesNotSendDefaultValueHeaderWhenNotProvided(): void
+    {
+        $httpClient = Mockery::mock(Client::class);
+        /** @var \Mockery\Expectation $post */
+        $post = $httpClient->shouldReceive('post');
+        $post->once()->with(
+            '/v1/flags/example/usage',
+            Mockery::on(function (array $args): bool {
+                return isset($args['headers']['X-Default-Value']) === false;
+            })
+        )->andReturn(new Response(200));
+
+        $client = $this->makeClient($httpClient);
+        $client->reportUsage('example');
+
+        $this->assertTrue(true); // avoid risky test warning
+    }
+
     public function testReportUsageUrlEncodesFlagKey(): void
     {
         $httpClient = Mockery::mock(Client::class);

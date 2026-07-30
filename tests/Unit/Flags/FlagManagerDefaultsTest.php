@@ -72,7 +72,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithInlineDefault(): void
     {
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('non-existent-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('non-existent-flag', null, 'inline-default-value')->andReturnNull();
 
         $manager = $this->createFlagManager();
 
@@ -86,7 +86,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleInlineDefaultTakesPriorityOverCollection(): void
     {
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null, 'inline-default')->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -103,7 +103,7 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleFallsBackToCollectionWhenNoInlineDefault(): void
     {
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('test-flag', null, 'collection-default')->andReturnNull();
 
         $defaults = DefaultsCollection::fromArray([
             'test-flag' => 'collection-default',
@@ -120,9 +120,9 @@ final class FlagManagerDefaultsTest extends TestCase
 
     public function testSingleWithDifferentTypes(): void
     {
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('bool-flag', null)->andReturnNull();
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('num-flag', null)->andReturnNull();
-        $this->expectReceive($this->apiClient, 'reportUsage')->with('str-flag', null)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('bool-flag', null, true)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('num-flag', null, 42)->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('str-flag', null, 'test')->andReturnNull();
 
         $manager = $this->createFlagManager();
 
