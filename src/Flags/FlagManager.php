@@ -114,7 +114,7 @@ final class FlagManager implements FlagManagerInterface
             return $default;
         }
 
-        return $this->defaults->has($key) ? $this->defaults->get($key) : null;
+        return $this->defaults->has($key) === true ? $this->defaults->get($key) : null;
     }
 
     private function getUsageContext(): ?Context
