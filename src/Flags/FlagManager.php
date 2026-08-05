@@ -52,8 +52,10 @@ final class FlagManager implements FlagManagerInterface
 
         foreach ($this->flags ?? [] as $flag) {
             if ($flag->getKey() === $key) {
-                // Report usage for this flag
-                $this->reportUsage($key, $this->getUsageContext());
+                // Report usage for this flag, including the effective default (inline
+                // parameter, falling back to a DefaultsCollection entry) so it's recorded
+                // even when the flag was found and evaluated normally
+                $this->reportUsage($key, $this->getUsageContext(), $this->resolveEffectiveDefault($key, $default));
 
                 return $this->evaluateFlag($flag);
             }
@@ -100,6 +102,19 @@ final class FlagManager implements FlagManagerInterface
     public function reportUsage(string $key, ?Context $context = null, mixed $defaultValue = null): void
     {
         $this->apiClient->reportUsage($key, $context, $defaultValue);
+    }
+
+    /**
+     * Resolve the default value that would be used if this flag fell back,
+     * prioritizing the inline parameter over a DefaultsCollection entry.
+     */
+    private function resolveEffectiveDefault(string $key, mixed $default): mixed
+    {
+        if ($default !== null) {
+            return $default;
+        }
+
+        return $this->defaults->has($key) ? $this->defaults->get($key) : null;
     }
 
     private function getUsageContext(): ?Context

@@ -12,6 +12,7 @@ use Zenmanage\Api\Response\RulesResponse;
 use Zenmanage\Cache\CacheInterface;
 use Zenmanage\Exception\EvaluationException;
 use Zenmanage\Flags\Context\Context;
+use Zenmanage\Flags\DefaultsCollection;
 use Zenmanage\Flags\FlagManager;
 use Zenmanage\Rules\RuleEngineInterface;
 
@@ -126,6 +127,40 @@ final class FlagManagerTest extends TestCase
 
         $this->assertTrue($flag->asBool());
         $this->assertSame('test-feature', $flag->getKey());
+    }
+
+    public function testSingleReportsInlineDefaultWhenFlagIsFound(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
+
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', null, false);
+
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
+
+        $manager = $this->createManager();
+        $flag = $manager->single('test-feature', false);
+
+        $this->assertTrue($flag->asBool());
+    }
+
+    public function testSingleReportsCollectionDefaultWhenFlagIsFound(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
+
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', null, false);
+
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
+
+        $defaults = DefaultsCollection::fromArray(['test-feature' => false]);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+        $flag = $manager->single('test-feature');
+
+        $this->assertTrue($flag->asBool());
     }
 
     public function testSingleThrowsWhenFlagMissingAndNoDefaults(): void
