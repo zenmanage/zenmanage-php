@@ -129,6 +129,22 @@ final class FlagManagerTest extends TestCase
         $this->assertSame('test-feature', $flag->getKey());
     }
 
+    public function testSingleReportsNullDefaultWhenFlagIsFoundAndNoDefaultProvided(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
+
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', null, null);
+
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
+
+        $manager = $this->createManager();
+        $flag = $manager->single('test-feature');
+
+        $this->assertTrue($flag->asBool());
+    }
+
     public function testSingleReportsInlineDefaultWhenFlagIsFound(): void
     {
         $this->expectOnce($this->cache, 'get')->andReturn(null);

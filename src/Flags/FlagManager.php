@@ -61,21 +61,14 @@ final class FlagManager implements FlagManagerInterface
             }
         }
 
-        // Priority 1: Use inline default parameter if provided
-        if ($default !== null) {
-            $flagFromDefault = $this->createFlagFromDefault($key, $default);
-            // Report usage even for default values
-            $this->reportUsage($key, $this->getUsageContext(), $default);
+        // Flag not found: fall back to the effective default (inline parameter,
+        // prioritized over a DefaultsCollection entry), if one exists
+        $effectiveDefault = $this->resolveEffectiveDefault($key, $default);
 
-            return $flagFromDefault;
-        }
-
-        // Priority 2: Check DefaultsCollection
-        if ($this->defaults->has($key)) {
-            $collectionDefault = $this->defaults->get($key);
-            $flagFromDefault = $this->createFlagFromDefault($key, $collectionDefault);
+        if ($effectiveDefault !== null) {
+            $flagFromDefault = $this->createFlagFromDefault($key, $effectiveDefault);
             // Report usage even for default values
-            $this->reportUsage($key, $this->getUsageContext(), $collectionDefault);
+            $this->reportUsage($key, $this->getUsageContext(), $effectiveDefault);
 
             return $flagFromDefault;
         }
