@@ -129,7 +129,10 @@ final class ApiClient implements ApiClientInterface
                 // Build headers with optional context
                 $headers = [];
                 if ($context !== null && $this->shouldSendContext($context) === true) {
-                    $headers['X-ZEN-CONTEXT'] = json_encode($context->jsonSerialize());
+                    $encodedContext = json_encode($context->jsonSerialize());
+                    if ($encodedContext !== false) {
+                        $headers['X-ZEN-CONTEXT'] = $encodedContext;
+                    }
                 }
 
                 if ($defaultValue !== null) {
