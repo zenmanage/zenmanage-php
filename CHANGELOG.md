@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-08-05
+
 ### Changed
 - Renamed SDK request headers to use a consistent `X-ZEN-` prefix, matching the server-side convention:
   - `X-API-Key` → `X-ZEN-API-KEY`
