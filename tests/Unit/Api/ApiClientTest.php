@@ -116,7 +116,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
-                $encoded = $args['headers']['X-ZENMANAGE-CONTEXT'] ?? '';
+                $encoded = $args['headers']['X-ZEN-Context'] ?? '';
                 $decoded = json_decode((string) $encoded, true);
 
                 return is_array($decoded)
@@ -139,7 +139,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
-                return isset($args['headers']['X-ZENMANAGE-CONTEXT']) === false;
+                return isset($args['headers']['X-ZEN-Context']) === false;
             })
         )->andReturn(new Response(200));
 
@@ -221,6 +221,26 @@ final class ApiClientTest extends TestCase
         $this->assertSame('zenmanage-laravel/9.9.9', $headers['X-ZEN-CLIENT-AGENT']);
     }
 
+    public function testClientHeadersUseZenApiKeyPrefix(): void
+    {
+        $client = new ApiClient(environmentToken: 'env-token');
+
+        $readHttpClient = \Closure::bind(
+            static fn (ApiClient $apiClient): Client => $apiClient->httpClient,
+            null,
+            ApiClient::class,
+        );
+
+        $this->assertIsCallable($readHttpClient);
+        $httpClient = $readHttpClient($client);
+        $headers = $httpClient->getConfig('headers');
+
+        $this->assertIsArray($headers);
+        $this->assertArrayHasKey('X-ZEN-Api-Key', $headers);
+        $this->assertSame('env-token', $headers['X-ZEN-Api-Key']);
+        $this->assertArrayNotHasKey('X-API-Key', $headers);
+    }
+
     public function testDefaultClientAgentIsRecognized(): void
     {
         $client = new ApiClient(environmentToken: 'env-token');
@@ -262,7 +282,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
-                $encoded = $args['headers']['X-Default-Value'] ?? '';
+                $encoded = $args['headers']['X-ZEN-Default-Value'] ?? '';
                 $decoded = json_decode((string) $encoded, true);
 
                 return is_array($decoded) && $decoded === ['example' => 'fallback-value'];
@@ -283,7 +303,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/bool-flag/usage',
             Mockery::on(function (array $args): bool {
-                $encoded = $args['headers']['X-Default-Value'] ?? '';
+                $encoded = $args['headers']['X-ZEN-Default-Value'] ?? '';
                 $decoded = json_decode((string) $encoded, true);
 
                 return is_array($decoded) && $decoded === ['bool-flag' => false];
@@ -304,7 +324,7 @@ final class ApiClientTest extends TestCase
         $post->once()->with(
             '/v1/flags/example/usage',
             Mockery::on(function (array $args): bool {
-                return isset($args['headers']['X-Default-Value']) === false;
+                return isset($args['headers']['X-ZEN-Default-Value']) === false;
             })
         )->andReturn(new Response(200));
 

@@ -47,7 +47,7 @@ final class ApiClient implements ApiClientInterface
             'timeout' => 10.0,
             'headers' => [
                 'Accept' => 'application/json',
-                'X-API-Key' => $this->environmentToken,
+                'X-ZEN-Api-Key' => $this->environmentToken,
                 'X-ZEN-CLIENT-AGENT' => $this->clientAgent . '/' . $this->sdkVersion,
             ],
         ]);
@@ -129,13 +129,13 @@ final class ApiClient implements ApiClientInterface
                 // Build headers with optional context
                 $headers = [];
                 if ($context !== null && $this->shouldSendContext($context) === true) {
-                    $headers['X-ZENMANAGE-CONTEXT'] = json_encode($context->jsonSerialize());
+                    $headers['X-ZEN-Context'] = json_encode($context->jsonSerialize());
                 }
 
                 if ($defaultValue !== null) {
                     $encodedDefaultValue = json_encode([$flagKey => $defaultValue]);
                     if ($encodedDefaultValue !== false) {
-                        $headers['X-Default-Value'] = $encodedDefaultValue;
+                        $headers['X-ZEN-Default-Value'] = $encodedDefaultValue;
                     }
                 }
 
