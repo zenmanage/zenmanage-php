@@ -117,7 +117,7 @@ final class FlagManagerTest extends TestCase
         $this->expectOnce($this->cache, 'set');
 
         $context = Context::single('user', 'user-123');
-        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', $context);
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', $context, null);
 
         $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
 
@@ -177,7 +177,7 @@ final class FlagManagerTest extends TestCase
     {
         $this->expectNever($this->cache, 'get');
         $this->apiClient->shouldNotReceive('getRules');
-        $this->expectOnce($this->apiClient, 'reportUsage')->with('some-flag', null);
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('some-flag', null, null);
 
         $this->createManager()->reportUsage('some-flag', null);
 

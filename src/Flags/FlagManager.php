@@ -63,16 +63,17 @@ final class FlagManager implements FlagManagerInterface
         if ($default !== null) {
             $flagFromDefault = $this->createFlagFromDefault($key, $default);
             // Report usage even for default values
-            $this->reportUsage($key, $this->getUsageContext());
+            $this->reportUsage($key, $this->getUsageContext(), $default);
 
             return $flagFromDefault;
         }
 
         // Priority 2: Check DefaultsCollection
         if ($this->defaults->has($key)) {
-            $flagFromDefault = $this->createFlagFromDefault($key, $this->defaults->get($key));
+            $collectionDefault = $this->defaults->get($key);
+            $flagFromDefault = $this->createFlagFromDefault($key, $collectionDefault);
             // Report usage even for default values
-            $this->reportUsage($key, $this->getUsageContext());
+            $this->reportUsage($key, $this->getUsageContext(), $collectionDefault);
 
             return $flagFromDefault;
         }
@@ -96,9 +97,9 @@ final class FlagManager implements FlagManagerInterface
         return $clone;
     }
 
-    public function reportUsage(string $key, ?Context $context = null): void
+    public function reportUsage(string $key, ?Context $context = null, mixed $defaultValue = null): void
     {
-        $this->apiClient->reportUsage($key, $context);
+        $this->apiClient->reportUsage($key, $context, $defaultValue);
     }
 
     private function getUsageContext(): ?Context

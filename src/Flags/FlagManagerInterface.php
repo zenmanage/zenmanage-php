@@ -40,8 +40,9 @@ interface FlagManagerInterface
      *
      * @param string $key The flag key
      * @param Context|null $context Optional context to send for tracking
+     * @param mixed $defaultValue Optional default value the caller fell back to, sent for persistence
      */
-    public function reportUsage(string $key, ?Context $context = null): void;
+    public function reportUsage(string $key, ?Context $context = null, mixed $defaultValue = null): void;
 
     /**
      * Refresh rules from the API.
