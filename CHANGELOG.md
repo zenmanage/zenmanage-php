@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.3] - 2026-08-16
+
 ### Fixed
 - `FlagManager::all()` now falls back to the configured `DefaultsCollection` on a per-key basis — previously a `DefaultsCollection` set via `withDefaults()` was silently ignored by `all()`, so a total rule-loading failure returned an empty array instead of the configured defaults.
 
