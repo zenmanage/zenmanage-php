@@ -39,35 +39,25 @@ final class FlagManager implements FlagManagerInterface
 
     public function all(): array
     {
-        try {
-            $this->ensureRulesLoaded();
-            $flags = $this->flags ?? [];
-        } catch (\Throwable $e) {
-            $this->logger->warning('Failed to load rules, falling back to configured defaults', [
-                'error' => $e->getMessage(),
-            ]);
+        $evaluatedByKey = [];
 
-            $flags = [];
+        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
+            $evaluatedFlag = $this->evaluateFlag($flag);
+            $evaluatedByKey[$evaluatedFlag->getKey()] = $evaluatedFlag;
         }
 
-        $evaluated = array_map(fn ($flag) => $this->evaluateFlag($flag), $flags);
-
-        $loadedKeys = array_map(fn (Flag $flag): string => $flag->getKey(), $evaluated);
-
         foreach ($this->defaults->all() as $key => $value) {
-            if (in_array($key, $loadedKeys, true) === false) {
-                $evaluated[] = $this->createFlagFromDefault($key, $value);
+            if (array_key_exists($key, $evaluatedByKey) === false) {
+                $evaluatedByKey[$key] = $this->createFlagFromDefault($key, $value);
             }
         }
 
-        return $evaluated;
+        return array_values($evaluatedByKey);
     }
 
     public function single(string $key, mixed $default = null): Flag
     {
-        $this->ensureRulesLoaded();
-
-        foreach ($this->flags ?? [] as $flag) {
+        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
             if ($flag->getKey() === $key) {
                 // Report usage for this flag, including the effective default (inline
                 // parameter, falling back to a DefaultsCollection entry) so it's recorded
@@ -78,8 +68,9 @@ final class FlagManager implements FlagManagerInterface
             }
         }
 
-        // Flag not found: fall back to the effective default (inline parameter,
-        // prioritized over a DefaultsCollection entry), if one exists
+        // Flag not found (including when rule-loading failed outright): fall back
+        // to the effective default (inline parameter, prioritized over a
+        // DefaultsCollection entry), if one exists
         $effectiveDefault = $this->resolveEffectiveDefault($key, $default);
 
         if ($effectiveDefault !== null) {
@@ -146,6 +137,27 @@ final class FlagManager implements FlagManagerInterface
         $this->logger->info('Refreshing rules from API');
 
         $this->loadRulesFromApi();
+    }
+
+    /**
+     * Load the current flag set, falling back to an empty array (so callers fall
+     * through to their own defaults handling) if rule-loading fails outright.
+     *
+     * @return Flag[]
+     */
+    private function loadFlagsOrFallBackToDefaults(): array
+    {
+        try {
+            $this->ensureRulesLoaded();
+
+            return $this->flags ?? [];
+        } catch (\Throwable $e) {
+            $this->logger->warning('Failed to load rules, falling back to configured defaults', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
     }
 
     /**

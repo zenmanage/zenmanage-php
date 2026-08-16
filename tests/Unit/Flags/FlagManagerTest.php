@@ -247,6 +247,35 @@ final class FlagManagerTest extends TestCase
         $manager->single('missing-flag');
     }
 
+    public function testSingleFallsBackToCollectionDefaultWhenRuleLoadingFails(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
+
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', null, 'collection-default');
+
+        $defaults = DefaultsCollection::fromArray(['test-feature' => 'collection-default']);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+        $flag = $manager->single('test-feature');
+
+        $this->assertSame('collection-default', $flag->asString());
+    }
+
+    public function testSingleThrowsWhenRuleLoadingFailsAndNoDefaults(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
+        $this->expectNever($this->apiClient, 'reportUsage');
+
+        $manager = $this->createManager();
+
+        $this->expectException(EvaluationException::class);
+        $manager->single('missing-flag');
+    }
+
     public function testRefreshRulesReloadsFromApi(): void
     {
         $this->expectNever($this->cache, 'get');
