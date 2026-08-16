@@ -39,11 +39,28 @@ final class FlagManager implements FlagManagerInterface
 
     public function all(): array
     {
-        $this->ensureRulesLoaded();
+        try {
+            $this->ensureRulesLoaded();
+            $flags = $this->flags ?? [];
+        } catch (\Throwable $e) {
+            $this->logger->warning('Failed to load rules, falling back to configured defaults', [
+                'error' => $e->getMessage(),
+            ]);
 
-        $flags = $this->flags ?? [];
+            $flags = [];
+        }
 
-        return array_map(fn ($flag) => $this->evaluateFlag($flag), $flags);
+        $evaluated = array_map(fn ($flag) => $this->evaluateFlag($flag), $flags);
+
+        $loadedKeys = array_map(fn (Flag $flag): string => $flag->getKey(), $evaluated);
+
+        foreach ($this->defaults->all() as $key => $value) {
+            if (in_array($key, $loadedKeys, true) === false) {
+                $evaluated[] = $this->createFlagFromDefault($key, $value);
+            }
+        }
+
+        return $evaluated;
     }
 
     public function single(string $key, mixed $default = null): Flag

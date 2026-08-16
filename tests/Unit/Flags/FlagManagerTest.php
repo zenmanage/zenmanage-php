@@ -111,6 +111,61 @@ final class FlagManagerTest extends TestCase
         $this->assertFalse($flags[0]->asBool());
     }
 
+    public function testAllFallsBackToDefaultsWhenRuleLoadingFails(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
+
+        $defaults = DefaultsCollection::fromArray([
+            'flag-a' => true,
+            'flag-b' => 'fallback',
+        ]);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+
+        $flags = $manager->all();
+
+        $this->assertCount(2, $flags);
+
+        $byKey = [];
+        foreach ($flags as $flag) {
+            $byKey[$flag->getKey()] = $flag;
+        }
+
+        $this->assertTrue($byKey['flag-a']->asBool());
+        $this->assertSame('fallback', $byKey['flag-b']->asString());
+    }
+
+    public function testAllMergesDefaultsForKeysMissingFromLoadedFlags(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
+
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
+
+        $defaults = DefaultsCollection::fromArray([
+            'test-feature' => false,
+            'other-flag' => 'default-value',
+        ]);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+
+        $flags = $manager->all();
+
+        $this->assertCount(2, $flags);
+
+        $byKey = [];
+        foreach ($flags as $flag) {
+            $byKey[$flag->getKey()] = $flag;
+        }
+
+        // The loaded flag's evaluated value takes priority over its default entry
+        $this->assertTrue($byKey['test-feature']->asBool());
+        $this->assertSame('default-value', $byKey['other-flag']->asString());
+    }
+
     public function testSingleUsesApiWhenCacheMissingAndReportsUsage(): void
     {
         $this->expectOnce($this->cache, 'get')->andReturn(null);
