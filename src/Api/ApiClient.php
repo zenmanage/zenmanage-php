@@ -22,7 +22,7 @@ final class ApiClient implements ApiClientInterface
     private const RULES_PATH = '/v1/flag-json';
     private const MAX_RETRIES = 3;
     private const RETRY_DELAY_MS = 100;
-    private const DEFAULT_SDK_VERSION = '5.1.2';
+    private const DEFAULT_SDK_VERSION = '5.1.3';
     private const PHP_CLIENT_AGENT = 'zenmanage-php';
     private const LARAVEL_CLIENT_AGENT = 'zenmanage-laravel';
 

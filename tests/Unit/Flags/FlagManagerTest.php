@@ -111,6 +111,61 @@ final class FlagManagerTest extends TestCase
         $this->assertFalse($flags[0]->asBool());
     }
 
+    public function testAllFallsBackToDefaultsWhenRuleLoadingFails(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
+
+        $defaults = DefaultsCollection::fromArray([
+            'flag-a' => true,
+            'flag-b' => 'fallback',
+        ]);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+
+        $flags = $manager->all();
+
+        $this->assertCount(2, $flags);
+
+        $byKey = [];
+        foreach ($flags as $flag) {
+            $byKey[$flag->getKey()] = $flag;
+        }
+
+        $this->assertTrue($byKey['flag-a']->asBool());
+        $this->assertSame('fallback', $byKey['flag-b']->asString());
+    }
+
+    public function testAllMergesDefaultsForKeysMissingFromLoadedFlags(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponse());
+        $this->expectOnce($this->cache, 'set');
+
+        $this->expectOnce($this->ruleEngine, 'evaluate')->andReturn(['boolean' => true]);
+
+        $defaults = DefaultsCollection::fromArray([
+            'test-feature' => false,
+            'other-flag' => 'default-value',
+        ]);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+
+        $flags = $manager->all();
+
+        $this->assertCount(2, $flags);
+
+        $byKey = [];
+        foreach ($flags as $flag) {
+            $byKey[$flag->getKey()] = $flag;
+        }
+
+        // The loaded flag's evaluated value takes priority over its default entry
+        $this->assertTrue($byKey['test-feature']->asBool());
+        $this->assertSame('default-value', $byKey['other-flag']->asString());
+    }
+
     public function testSingleUsesApiWhenCacheMissingAndReportsUsage(): void
     {
         $this->expectOnce($this->cache, 'get')->andReturn(null);
@@ -184,6 +239,35 @@ final class FlagManagerTest extends TestCase
         $this->expectOnce($this->cache, 'get')->andReturn(null);
         $this->expectOnce($this->apiClient, 'getRules')->andReturn(new RulesResponse('v1', []));
         $this->expectOnce($this->cache, 'set');
+        $this->expectNever($this->apiClient, 'reportUsage');
+
+        $manager = $this->createManager();
+
+        $this->expectException(EvaluationException::class);
+        $manager->single('missing-flag');
+    }
+
+    public function testSingleFallsBackToCollectionDefaultWhenRuleLoadingFails(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
+
+        $this->expectOnce($this->apiClient, 'reportUsage')->with('test-feature', null, 'collection-default');
+
+        $defaults = DefaultsCollection::fromArray(['test-feature' => 'collection-default']);
+
+        $manager = $this->createManager()->withDefaults($defaults);
+        $flag = $manager->single('test-feature');
+
+        $this->assertSame('collection-default', $flag->asString());
+    }
+
+    public function testSingleThrowsWhenRuleLoadingFailsAndNoDefaults(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andThrow(new \RuntimeException('API unavailable'));
+        $this->expectNever($this->cache, 'set');
         $this->expectNever($this->apiClient, 'reportUsage');
 
         $manager = $this->createManager();
