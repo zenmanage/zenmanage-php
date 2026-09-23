@@ -161,7 +161,7 @@ final class FlagManager implements FlagManagerInterface
         try {
             $this->ensureRulesLoaded();
 
-            return $this->filterKnownTypes($this->flags ?? []);
+            return $this->flags ?? [];
         } catch (\Throwable $e) {
             $this->logger->warning('Failed to load rules, falling back to configured defaults', [
                 'error' => $e->getMessage(),
@@ -177,6 +177,9 @@ final class FlagManager implements FlagManagerInterface
      * all() and single() fall through to their existing default-handling /
      * not-found paths instead of evaluating a value this SDK can't interpret.
      *
+     * Applied once per rule load/refresh (not per evaluation), so filtering
+     * cost and the "skipping flag" log line don't scale with lookup volume.
+     *
      * @param Flag[] $flags
      *
      * @return Flag[]
@@ -186,7 +189,7 @@ final class FlagManager implements FlagManagerInterface
         $known = [];
 
         foreach ($flags as $flag) {
-            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true) === true) {
+            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true)) {
                 $known[] = $flag;
 
                 continue;
@@ -220,7 +223,7 @@ final class FlagManager implements FlagManagerInterface
                 $data = json_decode($cached, true);
 
                 if (is_array($data) === true) {
-                    $this->flags = $this->parseFlags($data);
+                    $this->flags = $this->filterKnownTypes($this->parseFlags($data));
 
                     return;
                 }
@@ -243,7 +246,7 @@ final class FlagManager implements FlagManagerInterface
         $this->logger->info('Fetching rules from API');
 
         $response = $this->apiClient->getRules();
-        $this->flags = $response->getFlags();
+        $this->flags = $this->filterKnownTypes($response->getFlags());
 
         // Cache the rules
         $data = [
