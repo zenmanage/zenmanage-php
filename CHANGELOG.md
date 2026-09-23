@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.1.4] - 2026-09-23
+
+### Fixed
+- `FlagManager::all()` and `FlagManager::single()` now treat a flag with a `type` this SDK release doesn't recognize (e.g. a future `json` flag type) as if it weren't present in the rules payload, falling back to the caller's inline default or `DefaultsCollection` entry and logging a warning — previously an unrecognized type flag would be evaluated anyway and its value wrapper silently mis-parsed (e.g. `asString()` returning `''` instead of the configured default). Every other flag in the same payload continues to evaluate normally. This is a forward-compatibility fix ahead of the API's upcoming `json` flag type.
+
 ## [5.1.3] - 2026-08-16
 
 ### Fixed
