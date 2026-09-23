@@ -19,6 +19,17 @@ final class FlagManager implements FlagManagerInterface
 {
     private const CACHE_KEY = 'zenmanage_rules';
 
+    /**
+     * Flag `type` values this SDK release knows how to evaluate. A rules payload
+     * may include a flag type introduced after this SDK was released (e.g. a
+     * future `json` type) — such flags are treated as if they weren't present
+     * in the payload at all, so callers fall through to their own default
+     * handling instead of receiving a nonsensical evaluated value.
+     *
+     * @var string[]
+     */
+    private const KNOWN_FLAG_TYPES = ['boolean', 'string', 'number'];
+
     /** @var Flag[]|null */
     private ?array $flags = null;
 
@@ -150,7 +161,7 @@ final class FlagManager implements FlagManagerInterface
         try {
             $this->ensureRulesLoaded();
 
-            return $this->flags ?? [];
+            return $this->filterKnownTypes($this->flags ?? []);
         } catch (\Throwable $e) {
             $this->logger->warning('Failed to load rules, falling back to configured defaults', [
                 'error' => $e->getMessage(),
@@ -158,6 +169,36 @@ final class FlagManager implements FlagManagerInterface
 
             return [];
         }
+    }
+
+    /**
+     * Drop flags whose `type` this SDK release doesn't recognize. These are
+     * treated as though they weren't returned by the API at all, so both
+     * all() and single() fall through to their existing default-handling /
+     * not-found paths instead of evaluating a value this SDK can't interpret.
+     *
+     * @param Flag[] $flags
+     *
+     * @return Flag[]
+     */
+    private function filterKnownTypes(array $flags): array
+    {
+        $known = [];
+
+        foreach ($flags as $flag) {
+            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true) === true) {
+                $known[] = $flag;
+
+                continue;
+            }
+
+            $this->logger->warning('Skipping flag with unrecognized type; falling back to default', [
+                'key' => $flag->getKey(),
+                'type' => $flag->getType(),
+            ]);
+        }
+
+        return $known;
     }
 
     /**
