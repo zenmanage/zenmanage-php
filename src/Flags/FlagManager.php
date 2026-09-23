@@ -21,14 +21,14 @@ final class FlagManager implements FlagManagerInterface
 
     /**
      * Flag `type` values this SDK release knows how to evaluate. A rules payload
-     * may include a flag type introduced after this SDK was released (e.g. a
-     * future `json` type) — such flags are treated as if they weren't present
-     * in the payload at all, so callers fall through to their own default
-     * handling instead of receiving a nonsensical evaluated value.
+     * may include a flag type introduced after this SDK was released — such
+     * flags are treated as if they weren't present in the payload at all, so
+     * callers fall through to their own default handling instead of receiving
+     * a nonsensical evaluated value.
      *
      * @var string[]
      */
-    private const KNOWN_FLAG_TYPES = ['boolean', 'string', 'number'];
+    private const KNOWN_FLAG_TYPES = ['boolean', 'string', 'number', 'json'];
 
     /** @var Flag[]|null */
     private ?array $flags = null;
@@ -298,6 +298,7 @@ final class FlagManager implements FlagManagerInterface
             is_bool($value) => 'boolean',
             is_int($value) || is_float($value) => 'number',
             is_string($value) => 'string',
+            is_array($value) => 'json',
             default => 'string',
         };
 
@@ -305,6 +306,7 @@ final class FlagManager implements FlagManagerInterface
         $wrappedValue = match ($type) {
             'boolean' => ['boolean' => $value],
             'number' => ['number' => $value],
+            'json' => ['json' => $value],
             default => ['string' => $value],
         };
 

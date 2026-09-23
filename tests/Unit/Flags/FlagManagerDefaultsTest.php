@@ -123,6 +123,7 @@ final class FlagManagerDefaultsTest extends TestCase
         $this->expectReceive($this->apiClient, 'reportUsage')->with('bool-flag', null, true)->andReturnNull();
         $this->expectReceive($this->apiClient, 'reportUsage')->with('num-flag', null, 42)->andReturnNull();
         $this->expectReceive($this->apiClient, 'reportUsage')->with('str-flag', null, 'test')->andReturnNull();
+        $this->expectReceive($this->apiClient, 'reportUsage')->with('json-flag', null, ['theme' => 'dark'])->andReturnNull();
 
         $manager = $this->createFlagManager();
 
@@ -140,5 +141,10 @@ final class FlagManagerDefaultsTest extends TestCase
         $strFlag = $manager->single('str-flag', 'test');
         $this->assertSame('test', $strFlag->asString());
         $this->assertSame('string', $strFlag->getType());
+
+        // Array/json default — typed as json, not stringified
+        $jsonFlag = $manager->single('json-flag', ['theme' => 'dark']);
+        $this->assertSame(['theme' => 'dark'], $jsonFlag->asJson());
+        $this->assertSame('json', $jsonFlag->getType());
     }
 }

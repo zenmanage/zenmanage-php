@@ -47,6 +47,33 @@ final class FlagTest extends TestCase
         $this->assertSame(0, $fallbackNumberFlag->asNumber());
     }
 
+    public function testAsJsonReturnsTheStructuredValue(): void
+    {
+        $objectShapedFlag = $this->makeFlag(['json' => ['theme' => 'dark', 'limits' => [1, 2, 3]]], 'json');
+        $arrayShapedFlag = $this->makeFlag(['json' => [1, 2, 3]], 'json');
+
+        $this->assertSame(['theme' => 'dark', 'limits' => [1, 2, 3]], $objectShapedFlag->asJson());
+        $this->assertSame([1, 2, 3], $arrayShapedFlag->asJson());
+    }
+
+    /**
+     * Cross-type coercion semantics for json, documented in the README: a
+     * non-json flag's asJson() and a json flag's asString()/asNumber() both
+     * fall back to that accessor's normal "safe zero value" rather than
+     * throwing or attempting a lossy conversion.
+     */
+    public function testJsonCoercionFallbacksMatchOtherTypes(): void
+    {
+        $jsonFlag = $this->makeFlag(['json' => ['a' => 1]], 'json');
+        $stringFlag = $this->makeFlag(['string' => 'hello'], 'string');
+        $scalarJsonFlag = $this->makeFlag(['json' => 'not-an-object-or-array'], 'json');
+
+        $this->assertSame('', $jsonFlag->asString());
+        $this->assertSame(0, $jsonFlag->asNumber());
+        $this->assertSame([], $stringFlag->asJson());
+        $this->assertSame([], $scalarJsonFlag->asJson());
+    }
+
     public function testFromArrayAndJsonSerialize(): void
     {
         $data = [
