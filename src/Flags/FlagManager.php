@@ -189,7 +189,7 @@ final class FlagManager implements FlagManagerInterface
         $known = [];
 
         foreach ($flags as $flag) {
-            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true)) {
+            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true) === true) {
                 $known[] = $flag;
 
                 continue;
