@@ -30,7 +30,7 @@ final class FlagManager implements FlagManagerInterface
      */
     private const KNOWN_FLAG_TYPES = ['boolean', 'string', 'number', 'json'];
 
-    /** @var Flag[]|null */
+    /** @var array<string, Flag>|null */
     private ?array $flags = null;
 
     private Context $context;
@@ -52,9 +52,8 @@ final class FlagManager implements FlagManagerInterface
     {
         $evaluatedByKey = [];
 
-        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
-            $evaluatedFlag = $this->evaluateFlag($flag);
-            $evaluatedByKey[$evaluatedFlag->getKey()] = $evaluatedFlag;
+        foreach ($this->loadFlagsOrFallBackToDefaults() as $key => $flag) {
+            $evaluatedByKey[$key] = $this->evaluateFlag($flag);
         }
 
         foreach ($this->defaults->all() as $key => $value) {
@@ -68,15 +67,15 @@ final class FlagManager implements FlagManagerInterface
 
     public function single(string $key, mixed $default = null): Flag
     {
-        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
-            if ($flag->getKey() === $key) {
-                // Report usage for this flag, including the effective default (inline
-                // parameter, falling back to a DefaultsCollection entry) so it's recorded
-                // even when the flag was found and evaluated normally
-                $this->reportUsage($key, $this->getUsageContext(), $this->resolveEffectiveDefault($key, $default));
+        $flags = $this->loadFlagsOrFallBackToDefaults();
 
-                return $this->evaluateFlag($flag);
-            }
+        if (array_key_exists($key, $flags) === true) {
+            // Report usage for this flag, including the effective default (inline
+            // parameter, falling back to a DefaultsCollection entry) so it's recorded
+            // even when the flag was found and evaluated normally
+            $this->reportUsage($key, $this->getUsageContext(), $this->resolveEffectiveDefault($key, $default));
+
+            return $this->evaluateFlag($flags[$key]);
         }
 
         // Flag not found (including when rule-loading failed outright): fall back
@@ -154,7 +153,7 @@ final class FlagManager implements FlagManagerInterface
      * Load the current flag set, falling back to an empty array (so callers fall
      * through to their own defaults handling) if rule-loading fails outright.
      *
-     * @return Flag[]
+     * @return array<string, Flag>
      */
     private function loadFlagsOrFallBackToDefaults(): array
     {
@@ -172,17 +171,19 @@ final class FlagManager implements FlagManagerInterface
     }
 
     /**
-     * Drop flags whose `type` this SDK release doesn't recognize. These are
-     * treated as though they weren't returned by the API at all, so both
-     * all() and single() fall through to their existing default-handling /
-     * not-found paths instead of evaluating a value this SDK can't interpret.
+     * Drop flags whose `type` this SDK release doesn't recognize, and index the
+     * survivors by key so single() can look a flag up directly instead of
+     * scanning. These are treated as though they weren't returned by the API at
+     * all, so both all() and single() fall through to their existing
+     * default-handling / not-found paths instead of evaluating a value this SDK
+     * can't interpret.
      *
      * Applied once per rule load/refresh (not per evaluation), so filtering
      * cost and the "skipping flag" log line don't scale with lookup volume.
      *
      * @param Flag[] $flags
      *
-     * @return Flag[]
+     * @return array<string, Flag>
      */
     private function filterKnownTypes(array $flags): array
     {
@@ -190,7 +191,7 @@ final class FlagManager implements FlagManagerInterface
 
         foreach ($flags as $flag) {
             if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true) === true) {
-                $known[] = $flag;
+                $known[$flag->getKey()] = $flag;
 
                 continue;
             }
