@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-09-23
+
+### Added
+- `Flag::asJson(): array` — the SDK now supports the `json` flag type, exposing structured (object/array) flag values alongside the existing `asBool()`/`asString()`/`asNumber()` accessors. Array/object default values passed to `single()` or `DefaultsCollection` are now typed as `json` (previously stringified). See the README's "Value Types & Cross-Type Coercion" section for the full coercion reference.
+
 ## [5.1.4] - 2026-09-23
 
 ### Fixed

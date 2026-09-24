@@ -16,11 +16,16 @@ use Zenmanage\Flags\FlagManager;
 use Zenmanage\Rules\RuleEngine;
 
 /**
- * ZEN-1667: the API is about to start serving a fourth flag type, `json`, in
- * addition to boolean/string/number. An old SDK release parsing a rules
- * payload that includes a json-typed flag must not throw or crash — it must
- * degrade the unknown flag to the caller's default while leaving every other
- * flag in the payload unaffected.
+ * ZEN-1667: a rules payload may include a flag type this SDK release doesn't
+ * know how to evaluate yet (the API has, historically, gained new flag types
+ * — boolean/string/number were joined by `json` in ZEN-1383). An old SDK
+ * release parsing a payload with a flag type from a newer release must not
+ * throw or crash — it must degrade the unknown flag to the caller's default
+ * while leaving every other flag in the payload unaffected.
+ *
+ * This test uses a hypothetical still-unknown `duration` type (not `json`,
+ * which this SDK now supports natively — see JsonFlagTypeTest) to keep
+ * covering the unknown-type degradation path itself.
  *
  * This test parses a full rules payload (through the real RulesResponse /
  * Flag parsing and the real RuleEngine, not mocks) to confirm end to end
@@ -51,7 +56,7 @@ final class UnknownFlagTypeTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function rulesPayloadWithJsonFlag(): array
+    private function rulesPayloadWithUnknownTypeFlag(): array
     {
         return [
             'version' => '2026-09-23',
@@ -108,21 +113,21 @@ final class UnknownFlagTypeTest extends TestCase
                     'rules' => [],
                 ],
                 [
-                    // A flag type this SDK release doesn't know about yet (e.g. the
-                    // upcoming `json` type). The value wrapper key ("json") is also
-                    // unrecognized.
-                    'version' => 'fla_json_001',
-                    'type' => 'json',
+                    // A flag type this SDK release doesn't know about yet (a
+                    // hypothetical future `duration` type). The value wrapper key
+                    // ("duration") is also unrecognized.
+                    'version' => 'fla_dur_001',
+                    'type' => 'duration',
                     'key' => 'feature-config',
                     'name' => 'Feature Config',
                     'target' => [
-                        'version' => 'tar_json_001',
+                        'version' => 'tar_dur_001',
                         'expired_at' => null,
                         'published_at' => '2026-09-01T00:00:00+00:00',
                         'scheduled_at' => null,
                         'value' => [
-                            'version' => 'val_json_001',
-                            'value' => ['json' => ['nested' => ['a' => 1, 'b' => [2, 3]]]],
+                            'version' => 'val_dur_001',
+                            'value' => ['duration' => '30s'],
                         ],
                     ],
                     'rules' => [],
@@ -140,7 +145,7 @@ final class UnknownFlagTypeTest extends TestCase
         $this->expectReceive($this->cache, 'set')->andReturn(true);
         $this->expectReceive($this->apiClient, 'reportUsage')->andReturnNull();
 
-        $response = RulesResponse::fromArray($this->rulesPayloadWithJsonFlag());
+        $response = RulesResponse::fromArray($this->rulesPayloadWithUnknownTypeFlag());
         $this->expectReceive($this->apiClient, 'getRules')->andReturn($response);
 
         /** @var \Zenmanage\Api\ApiClientInterface $apiClient */
