@@ -137,6 +137,56 @@ final class FlagManagerTest extends TestCase
         $this->assertSame('fallback', $byKey['flag-b']->asString());
     }
 
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function flagArray(array $overrides = []): array
+    {
+        return array_merge([
+            'version' => 'fla_test',
+            'type' => 'boolean',
+            'key' => 'test-flag',
+            'name' => 'Test Flag',
+            'target' => [
+                'version' => 'tar_test',
+                'expired_at' => null,
+                'published_at' => '2026-01-15T00:00:00+00:00',
+                'scheduled_at' => null,
+                'value' => [
+                    'version' => 'val_test',
+                    'value' => ['boolean' => true],
+                ],
+            ],
+            'rules' => [],
+        ], $overrides);
+    }
+
+    public function testAllPreservesLoadedFlagOrder(): void
+    {
+        // Deliberately not alphabetical/insertion-friendly, so a keyed-map
+        // implementation can't accidentally pass by sorting.
+        $keys = ['zebra-flag', 'apple-flag', 'middle-flag'];
+
+        $data = [
+            'version' => 'v1',
+            'flags' => array_map(fn (string $key) => $this->flagArray(['key' => $key]), $keys),
+        ];
+
+        $this->expectOnce($this->cache, 'get')->andReturn(json_encode($data));
+        $this->apiClient->shouldNotReceive('getRules');
+        $this->expectNever($this->cache, 'set');
+
+        /** @var \Mockery\Expectation $evaluate */
+        $evaluate = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluate->andReturn(['boolean' => true]);
+
+        $manager = $this->createManager();
+        $flags = $manager->all();
+
+        $this->assertSame($keys, array_map(fn ($flag) => $flag->getKey(), $flags));
+    }
+
     public function testAllMergesDefaultsForKeysMissingFromLoadedFlags(): void
     {
         $this->expectOnce($this->cache, 'get')->andReturn(null);
