@@ -94,6 +94,17 @@ final class FlagManager implements FlagManagerInterface
         throw new EvaluationException("Flag not found: {$key}");
     }
 
+    /**
+     * Return a clone of this manager scoped to $context.
+     *
+     * The clone snapshots the parent's currently-loaded flags at the moment
+     * it's created. Calling refreshRules() on either the clone or the parent
+     * afterwards only updates that instance — the two do not share state, so
+     * the other keeps evaluating against the flags it already had. This is
+     * intentional: it keeps a scoped manager's results stable for its
+     * lifetime instead of shifting underfoot from an unrelated refresh
+     * elsewhere.
+     */
     public function withContext(Context $context): self
     {
         $clone = clone $this;
@@ -102,6 +113,12 @@ final class FlagManager implements FlagManagerInterface
         return $clone;
     }
 
+    /**
+     * Return a clone of this manager scoped to $defaults.
+     *
+     * See withContext() for the clone/refresh isolation semantics — they
+     * apply identically here.
+     */
     public function withDefaults(DefaultsCollection $defaults): self
     {
         $clone = clone $this;
@@ -142,6 +159,13 @@ final class FlagManager implements FlagManagerInterface
         return $this->context;
     }
 
+    /**
+     * Reload flags from the API into this instance only.
+     *
+     * A manager obtained via withContext()/withDefaults() does not share
+     * flag storage with the instance it was cloned from, so refreshing one
+     * never affects the other.
+     */
     public function refreshRules(): void
     {
         $this->logger->info('Refreshing rules from API');

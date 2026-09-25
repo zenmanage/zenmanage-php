@@ -26,12 +26,20 @@ interface FlagManagerInterface
     public function single(string $key, mixed $default = null): Flag;
 
     /**
-     * Set the evaluation context.
+     * Return a clone of this manager with the evaluation context set.
+     *
+     * The clone snapshots the parent's currently-loaded flags at the moment
+     * it's created and does not share flag storage with it afterwards —
+     * calling refreshRules() on either the clone or the parent only updates
+     * that instance, never the other.
      */
     public function withContext(Context $context): self;
 
     /**
-     * Set default values for flags.
+     * Return a clone of this manager with default values set.
+     *
+     * See withContext() for the clone/refresh isolation semantics — they
+     * apply identically here.
      */
     public function withDefaults(DefaultsCollection $defaults): self;
 
@@ -45,7 +53,11 @@ interface FlagManagerInterface
     public function reportUsage(string $key, ?Context $context = null, mixed $defaultValue = null): void;
 
     /**
-     * Refresh rules from the API.
+     * Refresh rules from the API into this instance only.
+     *
+     * A manager obtained via withContext()/withDefaults() does not share
+     * flag storage with the instance it was cloned from, so refreshing one
+     * never affects the other.
      */
     public function refreshRules(): void;
 }
