@@ -13,6 +13,7 @@ use Zenmanage\Cache\CacheInterface;
 use Zenmanage\Exception\EvaluationException;
 use Zenmanage\Flags\Context\Context;
 use Zenmanage\Flags\DefaultsCollection;
+use Zenmanage\Flags\Flag;
 use Zenmanage\Flags\FlagManager;
 use Zenmanage\Rules\RuleEngineInterface;
 
@@ -52,6 +53,31 @@ final class FlagManagerTest extends TestCase
     private function fixtureResponse(): RulesResponse
     {
         return RulesResponse::fromArray($this->loadFixture());
+    }
+
+    private function fixtureResponseWithBoolean(bool $value): RulesResponse
+    {
+        $data = $this->loadFixture();
+
+        /** @var array<int, array<string, mixed>> $flags */
+        $flags = $data['flags'];
+        /** @var array<string, mixed> $flag */
+        $flag = $flags[0];
+        /** @var array<string, mixed> $target */
+        $target = $flag['target'];
+        /** @var array<string, mixed> $targetValue */
+        $targetValue = $target['value'];
+        /** @var array<string, mixed> $innerValue */
+        $innerValue = $targetValue['value'];
+
+        $innerValue['boolean'] = $value;
+        $targetValue['value'] = $innerValue;
+        $target['value'] = $targetValue;
+        $flag['target'] = $target;
+        $flags[0] = $flag;
+        $data['flags'] = $flags;
+
+        return RulesResponse::fromArray($data);
     }
 
     /**
@@ -341,6 +367,56 @@ final class FlagManagerTest extends TestCase
 
         $this->assertCount(1, $flags);
         $this->assertFalse($flags[0]->asBool());
+    }
+
+    public function testCloneDoesNotSeeParentRefresh(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(true));
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(false));
+        $this->cache->shouldReceive('set');
+        $this->apiClient->shouldReceive('reportUsage');
+
+        /** @var \Mockery\Expectation $evaluateExpectation */
+        $evaluateExpectation = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluateExpectation->andReturnUsing(
+            fn (Flag $flag) => $flag->getTarget()->getValue()->getValue(),
+        );
+
+        $manager = $this->createManager();
+        $clone = $manager->withContext(Context::single('user', 'user-123'));
+
+        // Force the clone's own snapshot to load before the parent refreshes.
+        $this->assertTrue($clone->single('test-feature')->asBool());
+
+        $manager->refreshRules();
+
+        $this->assertTrue($clone->single('test-feature')->asBool());
+    }
+
+    public function testParentDoesNotSeeCloneRefresh(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(true));
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(false));
+        $this->cache->shouldReceive('set');
+        $this->apiClient->shouldReceive('reportUsage');
+
+        /** @var \Mockery\Expectation $evaluateExpectation */
+        $evaluateExpectation = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluateExpectation->andReturnUsing(
+            fn (Flag $flag) => $flag->getTarget()->getValue()->getValue(),
+        );
+
+        $manager = $this->createManager();
+        $clone = $manager->withContext(Context::single('user', 'user-123'));
+
+        // Force the parent's own snapshot to load before the clone refreshes.
+        $this->assertTrue($manager->single('test-feature')->asBool());
+
+        $clone->refreshRules();
+
+        $this->assertTrue($manager->single('test-feature')->asBool());
     }
 
     public function testInvalidCachedJsonFallsBackToApi(): void
