@@ -290,7 +290,7 @@ final class FlagManager implements FlagManagerInterface
     /**
      * Parse flags from cached data.
      *
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      *
      * @return Flag[]
      */
@@ -300,6 +300,10 @@ final class FlagManager implements FlagManagerInterface
 
         if (isset($data['flags']) === true && is_array($data['flags']) === true) {
             foreach ($data['flags'] as $flagData) {
+                if (is_array($flagData) === false) {
+                    continue;
+                }
+
                 try {
                     $flags[] = Flag::fromArray($flagData);
                 } catch (\Exception $e) {

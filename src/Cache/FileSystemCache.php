@@ -35,7 +35,12 @@ final class FileSystemCache implements CacheInterface
 
         $data = @json_decode($content, true);
 
-        if (is_array($data) === false || isset($data['value'], $data['expires']) === false) {
+        if (
+            is_array($data) === false
+            || isset($data['value']) === false
+            || is_string($data['value']) === false
+            || array_key_exists('expires', $data) === false
+        ) {
             return null;
         }
 

@@ -104,11 +104,11 @@ final class FlagManagerTest extends TestCase
 
     private function createManager(): FlagManager
     {
-        /** @var \Zenmanage\Api\ApiClientInterface $apiClient */
+        /** @var \Zenmanage\Api\ApiClientInterface&\Mockery\MockInterface $apiClient */
         $apiClient = $this->apiClient;
-        /** @var \Zenmanage\Cache\CacheInterface $cache */
+        /** @var \Zenmanage\Cache\CacheInterface&\Mockery\MockInterface $cache */
         $cache = $this->cache;
-        /** @var \Zenmanage\Rules\RuleEngineInterface $ruleEngine */
+        /** @var \Zenmanage\Rules\RuleEngineInterface&\Mockery\MockInterface $ruleEngine */
         $ruleEngine = $this->ruleEngine;
 
         return new FlagManager(

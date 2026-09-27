@@ -122,7 +122,6 @@ final class FlagTest extends TestCase
         $this->assertSame('example-flag', (string) $flag);
 
         $serialized = $flag->jsonSerialize();
-        $this->assertIsArray($serialized);
         $this->assertSame('flag-v1', $serialized['version']);
         $this->assertSame('boolean', $serialized['type']);
         $this->assertIsArray($serialized['rules']);

@@ -239,16 +239,16 @@ final class RolloutBucketTest extends TestCase
 
     public function testPercentageZeroDoesNotThrow(): void
     {
-        // Should not throw
+        $this->expectNotToPerformAssertions();
+
         RolloutBucket::isInBucket('salt', 'id', 0);
-        $this->assertTrue(true); // Assertion to avoid risky test
     }
 
     public function testPercentageHundredDoesNotThrow(): void
     {
-        // Should not throw
+        $this->expectNotToPerformAssertions();
+
         RolloutBucket::isInBucket('salt', 'id', 100);
-        $this->assertTrue(true);
     }
 
     // --- Deterministic bucketing ---

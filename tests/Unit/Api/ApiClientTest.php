@@ -24,7 +24,7 @@ final class ApiClientTest extends TestCase
 
     private function makeClient(Mockery\MockInterface $httpClient): ApiClient
     {
-        /** @var \GuzzleHttp\Client $httpClientTyped */
+        /** @var \GuzzleHttp\Client&Mockery\MockInterface $httpClientTyped */
         $httpClientTyped = $httpClient;
 
         return new ApiClient(
@@ -128,7 +128,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('example', Context::single('user', 'abc-123'));
 
-        $this->assertTrue(true); // avoid risky test warning
+        $this->expectNotToPerformAssertions();
     }
 
     public function testReportUsageDoesNotSendHeaderForAnonymousContext(): void
@@ -146,7 +146,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('example', new Context('anonymous'));
 
-        $this->assertTrue(true); // avoid risky test warning
+        $this->expectNotToPerformAssertions();
     }
 
     public function testReportUsageSwallowsErrorsAfterRetries(): void
@@ -161,7 +161,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
 
         $client->reportUsage('flag-key');
-        $this->assertTrue(true); // ensure no exception bubbles
+        $this->expectNotToPerformAssertions();
     }
 
     public function testClientAgentCanBeOverridden(): void
@@ -177,7 +177,6 @@ final class ApiClientTest extends TestCase
             ApiClient::class,
         );
 
-        $this->assertIsCallable($readClientAgent);
         $this->assertSame('zenmanage-laravel', $readClientAgent($client));
     }
 
@@ -194,7 +193,6 @@ final class ApiClientTest extends TestCase
             ApiClient::class,
         );
 
-        $this->assertIsCallable($readSdkVersion);
         $this->assertSame('9.9.9', $readSdkVersion($client));
     }
 
@@ -212,7 +210,6 @@ final class ApiClientTest extends TestCase
             ApiClient::class,
         );
 
-        $this->assertIsCallable($readHttpClient);
         $httpClient = $readHttpClient($client);
         $headers = $httpClient->getConfig('headers');
 
@@ -231,7 +228,6 @@ final class ApiClientTest extends TestCase
             ApiClient::class,
         );
 
-        $this->assertIsCallable($readHttpClient);
         $httpClient = $readHttpClient($client);
         $headers = $httpClient->getConfig('headers');
 
@@ -251,7 +247,6 @@ final class ApiClientTest extends TestCase
             ApiClient::class,
         );
 
-        $this->assertIsCallable($readClientAgent);
         $clientAgent = $readClientAgent($client);
 
         $this->assertContains($clientAgent, ['zenmanage-php', 'zenmanage-laravel']);
@@ -292,7 +287,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('example', null, 'fallback-value');
 
-        $this->assertTrue(true); // avoid risky test warning
+        $this->expectNotToPerformAssertions();
     }
 
     public function testReportUsageSendsNonStringDefaultValueHeader(): void
@@ -313,7 +308,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('bool-flag', null, false);
 
-        $this->assertTrue(true); // avoid risky test warning
+        $this->expectNotToPerformAssertions();
     }
 
     public function testReportUsageDoesNotSendDefaultValueHeaderWhenNotProvided(): void
@@ -331,7 +326,7 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('example');
 
-        $this->assertTrue(true); // avoid risky test warning
+        $this->expectNotToPerformAssertions();
     }
 
     public function testReportUsageUrlEncodesFlagKey(): void
@@ -345,6 +340,6 @@ final class ApiClientTest extends TestCase
         $client = $this->makeClient($httpClient);
         $client->reportUsage('flag/with/slashes');
 
-        $this->assertTrue(true);
+        $this->expectNotToPerformAssertions();
     }
 }

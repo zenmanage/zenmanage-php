@@ -79,6 +79,7 @@ final class InMemoryCacheTest extends TestCase
         sleep(1);
 
         // Should still exist
+        $this->assertTrue($this->cache->has('test-key'));
         $this->assertSame('test-value', $this->cache->get('test-key'));
     }
 }

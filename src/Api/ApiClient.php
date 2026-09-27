@@ -225,16 +225,18 @@ final class ApiClient implements ApiClientInterface
 
         $metadata = json_decode($body, true);
 
-        if (is_array($metadata) === false) {
+        if (is_array($metadata) === false || is_array($metadata['data'] ?? null) === false) {
             throw new InvalidRulesException('API response is not valid JSON');
         }
 
-        if (isset($metadata['data']['cdn'], $metadata['data']['path']) === false) {
+        $metadataData = $metadata['data'];
+
+        if (isset($metadataData['cdn'], $metadataData['path']) === false) {
             throw new InvalidRulesException('API response missing cdn or path fields');
         }
 
-        $cdn = $metadata['data']['cdn'];
-        $path = $metadata['data']['path'];
+        $cdn = $metadataData['cdn'];
+        $path = $metadataData['path'];
 
         if (is_string($cdn) === false || is_string($path) === false) {
             throw new InvalidRulesException('cdn or path fields are not strings');

@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `FlagManager::single()` now looks up a flag by key directly instead of linearly scanning the loaded flag list, and `all()` reuses the same key-indexed map instead of building its own — no behavior change, `all()`'s result order is unaffected.
 
+### Fixed
+- `FileSystemCache::get()` no longer treats a cache entry written without a TTL (i.e. one that should never expire) as a cache miss — previously any entry stored via `set()` with `$ttl = null` was always reported as missing.
+
 ## [5.2.0] - 2026-09-23
 
 ### Added
