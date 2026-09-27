@@ -176,6 +176,19 @@ $welcomeMessage = $zenmanage->flags()
     ->asString();
 ```
 
+### JSON Configuration
+
+```php
+// Structured configuration values (objects and arrays alike decode to PHP arrays)
+$theme = $zenmanage->flags()
+    ->single('theme-config', ['mode' => 'light', 'accent' => '#4f46e5'])
+    ->asJson();
+
+$rolloutPlan = $zenmanage->flags()
+    ->single('rollout-plan', [])
+    ->asJson();
+```
+
 ### Kill Switch for Problem Features
 
 ```php
@@ -488,6 +501,25 @@ $timeout = $zenmanage->flags()
     ->single('timeout', 5000)
     ->asNumber();
 ```
+
+## Value Types & Cross-Type Coercion
+
+A flag's `type` is one of `boolean`, `string`, `number`, or `json`. Each type has a matching accessor (`asBool()`, `asString()`, `asNumber()`, `asJson()`), plus `isEnabled()` for boolean flags specifically. This is the reference other Zenmanage SDKs mirror, so the rules below are intentionally exact — not just "reasonable defaults."
+
+**`asJson()`** returns the decoded value as a PHP array. Both JSON objects (`{"a": 1}`) and JSON arrays (`[1, 2, 3]`) decode to PHP arrays — the SDK never returns `stdClass` — matching how the rest of the SDK already parses API responses.
+
+**Calling the "wrong" accessor for a flag's type never throws.** Each accessor only recognizes its own value wrapper (`{"boolean": …}`, `{"string": …}`, `{"number": …}`, `{"json": …}`) and falls back to a safe zero value for every other type — it never attempts a lossy conversion between types:
+
+| Called on →<br>Flag type ↓ | `asBool()` | `asString()` | `asNumber()` | `asJson()` |
+|---|---|---|---|---|
+| `boolean` | the bool | `""` | `0` | `[]` |
+| `string` | `true` | the string | `0` | `[]` |
+| `number` | `true` | `""` | the number | `[]` |
+| `json` | `true` | `""` | `0` | the decoded array |
+
+**`asBool()` returns `true` for every non-boolean type, regardless of the underlying value** (including a `number` flag set to `0`, or a `string` flag set to `""`) — the value is wrapped in a non-empty array (e.g. `{"number": 0}`), and a non-empty array is always truthy in PHP. Use `isEnabled()`, not `asBool()`, when you specifically mean "is this boolean flag on" — `isEnabled()` returns `false` outright for any non-boolean flag instead. A `json` flag whose decoded value isn't itself an array (a bare JSON scalar such as `5` or `"x"`, which the API allows but which real flags won't normally use) makes `asJson()` return `[]` too — the same safe-zero-value behavior as calling it on a non-json flag, rather than wrapping the scalar or throwing.
+
+**Default values** passed to `single($key, $default)` or `DefaultsCollection` are typed from the PHP value itself: a PHP array becomes a `json`-typed flag (not a stringified fallback), so `asJson()` on a missing flag with an array default returns that array unchanged. `stdClass` defaults aren't supported — pass an associative array instead.
 
 ## Performance - Caching Rules
 

@@ -13,6 +13,7 @@ use Zenmanage\Cache\CacheInterface;
 use Zenmanage\Exception\EvaluationException;
 use Zenmanage\Flags\Context\Context;
 use Zenmanage\Flags\DefaultsCollection;
+use Zenmanage\Flags\Flag;
 use Zenmanage\Flags\FlagManager;
 use Zenmanage\Rules\RuleEngineInterface;
 
@@ -52,6 +53,31 @@ final class FlagManagerTest extends TestCase
     private function fixtureResponse(): RulesResponse
     {
         return RulesResponse::fromArray($this->loadFixture());
+    }
+
+    private function fixtureResponseWithBoolean(bool $value): RulesResponse
+    {
+        $data = $this->loadFixture();
+
+        /** @var array<int, array<string, mixed>> $flags */
+        $flags = $data['flags'];
+        /** @var array<string, mixed> $flag */
+        $flag = $flags[0];
+        /** @var array<string, mixed> $target */
+        $target = $flag['target'];
+        /** @var array<string, mixed> $targetValue */
+        $targetValue = $target['value'];
+        /** @var array<string, mixed> $innerValue */
+        $innerValue = $targetValue['value'];
+
+        $innerValue['boolean'] = $value;
+        $targetValue['value'] = $innerValue;
+        $target['value'] = $targetValue;
+        $flag['target'] = $target;
+        $flags[0] = $flag;
+        $data['flags'] = $flags;
+
+        return RulesResponse::fromArray($data);
     }
 
     /**
@@ -135,6 +161,56 @@ final class FlagManagerTest extends TestCase
 
         $this->assertTrue($byKey['flag-a']->asBool());
         $this->assertSame('fallback', $byKey['flag-b']->asString());
+    }
+
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function flagArray(array $overrides = []): array
+    {
+        return array_merge([
+            'version' => 'fla_test',
+            'type' => 'boolean',
+            'key' => 'test-flag',
+            'name' => 'Test Flag',
+            'target' => [
+                'version' => 'tar_test',
+                'expired_at' => null,
+                'published_at' => '2026-01-15T00:00:00+00:00',
+                'scheduled_at' => null,
+                'value' => [
+                    'version' => 'val_test',
+                    'value' => ['boolean' => true],
+                ],
+            ],
+            'rules' => [],
+        ], $overrides);
+    }
+
+    public function testAllPreservesLoadedFlagOrder(): void
+    {
+        // Deliberately not alphabetical/insertion-friendly, so a keyed-map
+        // implementation can't accidentally pass by sorting.
+        $keys = ['zebra-flag', 'apple-flag', 'middle-flag'];
+
+        $data = [
+            'version' => 'v1',
+            'flags' => array_map(fn (string $key) => $this->flagArray(['key' => $key]), $keys),
+        ];
+
+        $this->expectOnce($this->cache, 'get')->andReturn(json_encode($data));
+        $this->apiClient->shouldNotReceive('getRules');
+        $this->expectNever($this->cache, 'set');
+
+        /** @var \Mockery\Expectation $evaluate */
+        $evaluate = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluate->andReturn(['boolean' => true]);
+
+        $manager = $this->createManager();
+        $flags = $manager->all();
+
+        $this->assertSame($keys, array_map(fn ($flag) => $flag->getKey(), $flags));
     }
 
     public function testAllMergesDefaultsForKeysMissingFromLoadedFlags(): void
@@ -291,6 +367,56 @@ final class FlagManagerTest extends TestCase
 
         $this->assertCount(1, $flags);
         $this->assertFalse($flags[0]->asBool());
+    }
+
+    public function testCloneDoesNotSeeParentRefresh(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(true));
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(false));
+        $this->cache->shouldReceive('set');
+        $this->apiClient->shouldReceive('reportUsage');
+
+        /** @var \Mockery\Expectation $evaluateExpectation */
+        $evaluateExpectation = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluateExpectation->andReturnUsing(
+            fn (Flag $flag) => $flag->getTarget()->getValue()->getValue(),
+        );
+
+        $manager = $this->createManager();
+        $clone = $manager->withContext(Context::single('user', 'user-123'));
+
+        // Force the clone's own snapshot to load before the parent refreshes.
+        $this->assertTrue($clone->single('test-feature')->asBool());
+
+        $manager->refreshRules();
+
+        $this->assertTrue($clone->single('test-feature')->asBool());
+    }
+
+    public function testParentDoesNotSeeCloneRefresh(): void
+    {
+        $this->expectOnce($this->cache, 'get')->andReturn(null);
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(true));
+        $this->expectOnce($this->apiClient, 'getRules')->andReturn($this->fixtureResponseWithBoolean(false));
+        $this->cache->shouldReceive('set');
+        $this->apiClient->shouldReceive('reportUsage');
+
+        /** @var \Mockery\Expectation $evaluateExpectation */
+        $evaluateExpectation = $this->ruleEngine->shouldReceive('evaluate');
+        $evaluateExpectation->andReturnUsing(
+            fn (Flag $flag) => $flag->getTarget()->getValue()->getValue(),
+        );
+
+        $manager = $this->createManager();
+        $clone = $manager->withContext(Context::single('user', 'user-123'));
+
+        // Force the parent's own snapshot to load before the clone refreshes.
+        $this->assertTrue($manager->single('test-feature')->asBool());
+
+        $clone->refreshRules();
+
+        $this->assertTrue($manager->single('test-feature')->asBool());
     }
 
     public function testInvalidCachedJsonFallsBackToApi(): void

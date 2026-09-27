@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `FlagManager::single()` now looks up a flag by key directly instead of linearly scanning the loaded flag list, and `all()` reuses the same key-indexed map instead of building its own — no behavior change, `all()`'s result order is unaffected.
+
+## [5.2.0] - 2026-09-23
+
+### Added
+- `Flag::asJson(): array` — the SDK now supports the `json` flag type, exposing structured (object/array) flag values alongside the existing `asBool()`/`asString()`/`asNumber()` accessors. Array/object default values passed to `single()` or `DefaultsCollection` are now typed as `json` (previously stringified). See the README's "Value Types & Cross-Type Coercion" section for the full coercion reference.
+
+## [5.1.4] - 2026-09-23
+
+### Fixed
+- `FlagManager::all()` and `FlagManager::single()` now treat a flag with a `type` this SDK release doesn't recognize (e.g. a future `json` flag type) as if it weren't present in the rules payload, falling back to the caller's inline default or `DefaultsCollection` entry and logging a warning — previously an unrecognized type flag would be evaluated anyway and its value wrapper silently mis-parsed (e.g. `asString()` returning `''` instead of the configured default). Every other flag in the same payload continues to evaluate normally. This is a forward-compatibility fix ahead of the API's upcoming `json` flag type.
+
 ## [5.1.3] - 2026-08-16
 
 ### Fixed

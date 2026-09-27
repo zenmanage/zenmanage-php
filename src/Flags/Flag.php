@@ -137,6 +137,28 @@ final class Flag implements JsonSerializable
     }
 
     /**
+     * Get the flag value as a JSON-decoded array (covers both JSON objects and
+     * JSON arrays — this SDK decodes both as PHP arrays, matching how the rest
+     * of the codebase parses API responses).
+     *
+     * Returns an empty array for a non-json flag, or for a json flag whose
+     * decoded value isn't itself an array (e.g. a bare JSON scalar) — the same
+     * "safe zero value" fallback asString()/asNumber() use for their types.
+     *
+     * @return array<mixed>
+     */
+    public function asJson(): array
+    {
+        $value = $this->target->getValue()->getValue();
+
+        if (is_array($value) === true && is_array($value['json'] ?? null) === true) {
+            return $value['json'];
+        }
+
+        return [];
+    }
+
+    /**
      * Get the raw flag value.
      */
     public function getValue(): mixed

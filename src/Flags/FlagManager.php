@@ -19,7 +19,18 @@ final class FlagManager implements FlagManagerInterface
 {
     private const CACHE_KEY = 'zenmanage_rules';
 
-    /** @var Flag[]|null */
+    /**
+     * Flag `type` values this SDK release knows how to evaluate. A rules payload
+     * may include a flag type introduced after this SDK was released — such
+     * flags are treated as if they weren't present in the payload at all, so
+     * callers fall through to their own default handling instead of receiving
+     * a nonsensical evaluated value.
+     *
+     * @var string[]
+     */
+    private const KNOWN_FLAG_TYPES = ['boolean', 'string', 'number', 'json'];
+
+    /** @var array<string, Flag>|null */
     private ?array $flags = null;
 
     private Context $context;
@@ -41,9 +52,8 @@ final class FlagManager implements FlagManagerInterface
     {
         $evaluatedByKey = [];
 
-        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
-            $evaluatedFlag = $this->evaluateFlag($flag);
-            $evaluatedByKey[$evaluatedFlag->getKey()] = $evaluatedFlag;
+        foreach ($this->loadFlagsOrFallBackToDefaults() as $key => $flag) {
+            $evaluatedByKey[$key] = $this->evaluateFlag($flag);
         }
 
         foreach ($this->defaults->all() as $key => $value) {
@@ -57,15 +67,15 @@ final class FlagManager implements FlagManagerInterface
 
     public function single(string $key, mixed $default = null): Flag
     {
-        foreach ($this->loadFlagsOrFallBackToDefaults() as $flag) {
-            if ($flag->getKey() === $key) {
-                // Report usage for this flag, including the effective default (inline
-                // parameter, falling back to a DefaultsCollection entry) so it's recorded
-                // even when the flag was found and evaluated normally
-                $this->reportUsage($key, $this->getUsageContext(), $this->resolveEffectiveDefault($key, $default));
+        $flags = $this->loadFlagsOrFallBackToDefaults();
 
-                return $this->evaluateFlag($flag);
-            }
+        if (array_key_exists($key, $flags) === true) {
+            // Report usage for this flag, including the effective default (inline
+            // parameter, falling back to a DefaultsCollection entry) so it's recorded
+            // even when the flag was found and evaluated normally
+            $this->reportUsage($key, $this->getUsageContext(), $this->resolveEffectiveDefault($key, $default));
+
+            return $this->evaluateFlag($flags[$key]);
         }
 
         // Flag not found (including when rule-loading failed outright): fall back
@@ -84,6 +94,17 @@ final class FlagManager implements FlagManagerInterface
         throw new EvaluationException("Flag not found: {$key}");
     }
 
+    /**
+     * Return a clone of this manager scoped to $context.
+     *
+     * The clone snapshots the parent's currently-loaded flags at the moment
+     * it's created. Calling refreshRules() on either the clone or the parent
+     * afterwards only updates that instance — the two do not share state, so
+     * the other keeps evaluating against the flags it already had. This is
+     * intentional: it keeps a scoped manager's results stable for its
+     * lifetime instead of shifting underfoot from an unrelated refresh
+     * elsewhere.
+     */
     public function withContext(Context $context): self
     {
         $clone = clone $this;
@@ -92,6 +113,12 @@ final class FlagManager implements FlagManagerInterface
         return $clone;
     }
 
+    /**
+     * Return a clone of this manager scoped to $defaults.
+     *
+     * See withContext() for the clone/refresh isolation semantics — they
+     * apply identically here.
+     */
     public function withDefaults(DefaultsCollection $defaults): self
     {
         $clone = clone $this;
@@ -132,6 +159,13 @@ final class FlagManager implements FlagManagerInterface
         return $this->context;
     }
 
+    /**
+     * Reload flags from the API into this instance only.
+     *
+     * A manager obtained via withContext()/withDefaults() does not share
+     * flag storage with the instance it was cloned from, so refreshing one
+     * never affects the other.
+     */
     public function refreshRules(): void
     {
         $this->logger->info('Refreshing rules from API');
@@ -143,7 +177,7 @@ final class FlagManager implements FlagManagerInterface
      * Load the current flag set, falling back to an empty array (so callers fall
      * through to their own defaults handling) if rule-loading fails outright.
      *
-     * @return Flag[]
+     * @return array<string, Flag>
      */
     private function loadFlagsOrFallBackToDefaults(): array
     {
@@ -158,6 +192,41 @@ final class FlagManager implements FlagManagerInterface
 
             return [];
         }
+    }
+
+    /**
+     * Drop flags whose `type` this SDK release doesn't recognize, and index the
+     * survivors by key so single() can look a flag up directly instead of
+     * scanning. These are treated as though they weren't returned by the API at
+     * all, so both all() and single() fall through to their existing
+     * default-handling / not-found paths instead of evaluating a value this SDK
+     * can't interpret.
+     *
+     * Applied once per rule load/refresh (not per evaluation), so filtering
+     * cost and the "skipping flag" log line don't scale with lookup volume.
+     *
+     * @param Flag[] $flags
+     *
+     * @return array<string, Flag>
+     */
+    private function filterKnownTypes(array $flags): array
+    {
+        $known = [];
+
+        foreach ($flags as $flag) {
+            if (in_array($flag->getType(), self::KNOWN_FLAG_TYPES, true) === true) {
+                $known[$flag->getKey()] = $flag;
+
+                continue;
+            }
+
+            $this->logger->warning('Skipping flag with unrecognized type; falling back to default', [
+                'key' => $flag->getKey(),
+                'type' => $flag->getType(),
+            ]);
+        }
+
+        return $known;
     }
 
     /**
@@ -179,7 +248,7 @@ final class FlagManager implements FlagManagerInterface
                 $data = json_decode($cached, true);
 
                 if (is_array($data) === true) {
-                    $this->flags = $this->parseFlags($data);
+                    $this->flags = $this->filterKnownTypes($this->parseFlags($data));
 
                     return;
                 }
@@ -202,7 +271,7 @@ final class FlagManager implements FlagManagerInterface
         $this->logger->info('Fetching rules from API');
 
         $response = $this->apiClient->getRules();
-        $this->flags = $response->getFlags();
+        $this->flags = $this->filterKnownTypes($response->getFlags());
 
         // Cache the rules
         $data = [
@@ -254,6 +323,7 @@ final class FlagManager implements FlagManagerInterface
             is_bool($value) => 'boolean',
             is_int($value) || is_float($value) => 'number',
             is_string($value) => 'string',
+            is_array($value) => 'json',
             default => 'string',
         };
 
@@ -261,6 +331,7 @@ final class FlagManager implements FlagManagerInterface
         $wrappedValue = match ($type) {
             'boolean' => ['boolean' => $value],
             'number' => ['number' => $value],
+            'json' => ['json' => $value],
             default => ['string' => $value],
         };
 
