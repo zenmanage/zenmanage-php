@@ -13,6 +13,6 @@ final class PlaceholderTest extends TestCase
 {
     public function testPlaceholder(): void
     {
-        $this->assertTrue(true);
+        $this->expectNotToPerformAssertions();
     }
 }

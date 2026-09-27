@@ -51,7 +51,7 @@ final class RulesResponse
     /**
      * Parse the API response JSON into a RulesResponse object.
      *
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     public static function fromArray(array $data): self
     {
@@ -66,6 +66,10 @@ final class RulesResponse
         $flags = [];
 
         foreach ($data['flags'] as $flagData) {
+            if (is_array($flagData) === false) {
+                continue;
+            }
+
             try {
                 $flags[] = Flag::fromArray($flagData);
             } catch (\Exception $e) {

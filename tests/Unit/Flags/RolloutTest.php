@@ -45,7 +45,6 @@ final class RolloutTest extends TestCase
         $this->assertSame('active', $rollout->getStatus());
         $this->assertInstanceOf(Target::class, $rollout->getTarget());
         $this->assertSame('tar_rollout', $rollout->getTarget()->getVersion());
-        $this->assertIsArray($rollout->getRules());
         $this->assertCount(0, $rollout->getRules());
     }
 
@@ -92,7 +91,6 @@ final class RolloutTest extends TestCase
         $rollout = Rollout::fromArray($this->rolloutArray());
         $json = $rollout->jsonSerialize();
 
-        $this->assertIsArray($json);
         $this->assertSame(25, $json['percentage']);
         $this->assertSame('abc123def456', $json['salt']);
         $this->assertSame('active', $json['status']);

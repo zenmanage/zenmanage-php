@@ -59,7 +59,7 @@ final class Context implements JsonSerializable
                 $values = [];
                 if (isset($attrData['values']) === true && is_array($attrData['values']) === true) {
                     foreach ($attrData['values'] as $valueData) {
-                        if (is_array($valueData) === true && isset($valueData['value']) === true) {
+                        if (is_array($valueData) === true && isset($valueData['value']) === true && is_scalar($valueData['value']) === true) {
                             $values[] = (string) $valueData['value'];
                         } elseif (is_string($valueData) === true) {
                             $values[] = $valueData;

@@ -103,7 +103,7 @@ final class Flag implements JsonSerializable
     {
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) === true && isset($value['string']) === true) {
+        if (is_array($value) === true && isset($value['string']) === true && is_scalar($value['string']) === true) {
             return (string) $value['string'];
         }
 
@@ -125,8 +125,8 @@ final class Flag implements JsonSerializable
     {
         $value = $this->target->getValue()->getValue();
 
-        if (is_array($value) === true && isset($value['number']) === true) {
-            return $value['number'];
+        if (is_array($value) === true && isset($value['number']) === true && is_numeric($value['number']) === true) {
+            return $value['number'] + 0;
         }
 
         if (is_numeric($value) === true) {
@@ -167,7 +167,7 @@ final class Flag implements JsonSerializable
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     public static function fromArray(array $data): self
     {
@@ -175,6 +175,10 @@ final class Flag implements JsonSerializable
 
         if (isset($data['rules']) === true && is_array($data['rules']) === true) {
             foreach ($data['rules'] as $ruleData) {
+                if (is_array($ruleData) === false) {
+                    continue;
+                }
+
                 $rules[] = Rule::fromArray($ruleData);
             }
         }
