@@ -1,6 +1,6 @@
 # Zenmanage PHP SDK
 
-[![Build Status](https://github.com/zenmanage/zenmanage-php/actions/workflows/ci.yml/badge.svg)](https://github.com/zenmanage/zenmanage-php) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8c017d5f901047dab45915e60df18193)](https://app.codacy.com/gh/zenmanage/zenmanage-php/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![CI](https://github.com/zenmanage/zenmanage-php/actions/workflows/ci.yml/badge.svg)](https://github.com/zenmanage/zenmanage-php/actions/workflows/ci.yml) [![Version](https://img.shields.io/packagist/v/zenmanage/zenmanage-php)](https://packagist.org/packages/zenmanage/zenmanage-php) [![License](https://img.shields.io/github/license/zenmanage/zenmanage-php)](LICENSE) [![Codacy Badge](https://app.codacy.com/project/badge/Grade/8c017d5f901047dab45915e60df18193)](https://app.codacy.com/gh/zenmanage/zenmanage-php/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 Add feature flags to your PHP application in minutes. Control feature rollouts, A/B test, and manage configurations without deploying code.
 
