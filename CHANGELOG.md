@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.2.1] - 2026-10-30
+
 ### Changed
 - `FlagManager::single()` now looks up a flag by key directly instead of linearly scanning the loaded flag list, and `all()` reuses the same key-indexed map instead of building its own — no behavior change, `all()`'s result order is unaffected.
 
