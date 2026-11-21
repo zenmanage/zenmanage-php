@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Zenmanage\Tests\Unit\Flags;
 
 use InvalidArgumentException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Zenmanage\Flags\RolloutBucket;
 
@@ -92,9 +93,7 @@ final class RolloutBucketTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testCrc32bHexMatchesSpecVector(
         string $salt,
         string $identifier,
@@ -109,9 +108,7 @@ final class RolloutBucketTest extends TestCase
         $this->assertSame($crc32bHex, $hash);
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testUnsignedValueMatchesSpecVector(
         string $salt,
         string $identifier,
@@ -126,9 +123,7 @@ final class RolloutBucketTest extends TestCase
         $this->assertSame($unsigned, $computed);
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testBucketValueMatchesSpecVector(
         string $salt,
         string $identifier,
@@ -143,9 +138,7 @@ final class RolloutBucketTest extends TestCase
         $this->assertSame($bucket, $computed % 100);
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testIsInBucketAt50Percent(
         string $salt,
         string $identifier,
@@ -159,9 +152,7 @@ final class RolloutBucketTest extends TestCase
         $this->assertSame($at50, RolloutBucket::isInBucket($salt, $identifier, 50));
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testIsInBucketAt25Percent(
         string $salt,
         string $identifier,
@@ -175,9 +166,7 @@ final class RolloutBucketTest extends TestCase
         $this->assertSame($at25, RolloutBucket::isInBucket($salt, $identifier, 25));
     }
 
-    /**
-     * @dataProvider vectorProvider
-     */
+    #[DataProvider('vectorProvider')]
     public function testIsInBucketAt10Percent(
         string $salt,
         string $identifier,
